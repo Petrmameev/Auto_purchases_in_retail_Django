@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3.3'
 
 services:
   backend:
@@ -15,22 +15,26 @@ services:
       - static_volume:/app/static
       - media_volume:/app/media
     depends_on:
-      - postgres
+#      - postgres
+      - db
     expose:
       - 8000
-
-  postgres:
-    image: 'postgres'
-    ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_DB=netology
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+  db:
+    image: busybox
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
-      - ./logs:/var/logs
-    restart: unless-stopped
+      - ./data:/data/db
+#  postgres:
+#    image: 'postgres'
+#    ports:
+#      - 5432:5432
+#    environment:
+#      - POSTGRES_DB=netology
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=postgres
+#    volumes:
+#      - postgres_data:/var/lib/postgresql/data/
+#      - ./logs:/var/logs
+#    restart: unless-stopped
 
   nginx:
     build: ./nginx
