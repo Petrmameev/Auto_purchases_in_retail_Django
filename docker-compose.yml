@@ -17,8 +17,8 @@ services:
     depends_on:
       - postgres
 #      - db
-    expose:
-      - 8000
+#    expose:
+#      - 8000
 #  db:
 #    image: busybox
 #    volumes:
@@ -44,7 +44,7 @@ services:
       - static_volume:/app/static
       - media_volume:/app/media
     ports:
-      - 8080:80
+      - "80:80"
 
 volumes:
   postgres_data:
