@@ -24,12 +24,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
-
-# ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
-ALLOWED_HOSTS = ["*"]
+# DEBUG = True
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
+# ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
@@ -81,18 +80,18 @@ WSGI_APPLICATION = "netology_pd_diplom.wsgi.application"
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
-    # "default": {
-    #     "ENGINE": os.getenv("DB_ENGINE"),
-    #     "NAME": os.getenv("DB_NAME"),
-    #     "HOST": os.getenv("DB_HOST"),
-    #     "PORT": os.getenv("DB_PORT"),
-    #     "USER": os.getenv("DB_USER"),
-    #     "PASSWORD": os.getenv("DB_PASSWORD"),
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     # }
+    "default": {
+        "ENGINE": os.getenv("DB_ENGINE"),
+        "NAME": os.getenv("DB_NAME"),
+        "HOST": os.getenv("DB_HOST"),
+        "PORT": os.getenv("DB_PORT"),
+        "USER": os.getenv("DB_USER"),
+        "PASSWORD": os.getenv("DB_PASSWORD"),
+    }
 }
 
 # Password validation
@@ -142,6 +141,8 @@ EMAIL_HOST_PASSWORD = "i~8W4rdRPFlo"
 EMAIL_PORT = "465"
 EMAIL_USE_SSL = True
 SERVER_EMAIL = EMAIL_HOST_USER
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
