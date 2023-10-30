@@ -15,18 +15,18 @@ services:
       - static_volume:/app/static
       - media_volume:/app/media
     depends_on:
-      - postgres
-#      - db
+#      - postgres
+      - db
 #    expose:
 #      - 8000
 #  db:
 #    image: busybox
 #    volumes:
 #      - ./data:/data/db
-  postgres:
+  db:
     image: 'postgres'
-#    ports:
-#      - 5432:5432
+    ports:
+      - 5432:5432c
     environment:
       - POSTGRES_DB=netology
       - POSTGRES_USER=postgres
