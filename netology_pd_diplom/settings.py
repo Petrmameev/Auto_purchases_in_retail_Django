@@ -32,6 +32,9 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 
 # Application definition
 
+CSRF_TRUSTED_ORIGINS = ['http://*.http://localhost/admin/login/']
+
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
