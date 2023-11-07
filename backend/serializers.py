@@ -13,6 +13,36 @@ from backend.models import (
     Contact,
 )
 
+class NewUserRegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "company",
+            "position",
+            "contacts",
+            "password",
+        )
+        read_only_fields = ("id",)
+
+    def create(self, validated_data):
+        password = validated_data.pop("password")
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+class ConfirmAccountSerializer():
+    pass
+
+class LoginAccountSerializer():
+    pass
+
+class AccountDetailsSerializer():
+    pass
 
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,23 +60,6 @@ class ContactSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id",)
         extra_kwargs = {"user": {"write_only": True}}
-
-
-class UserSerializer(serializers.ModelSerializer):
-    contacts = ContactSerializer(read_only=True, many=True)
-
-    class Meta:
-        model = User
-        fields = (
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "company",
-            "position",
-            "contacts",
-        )
-        read_only_fields = ("id",)
 
 
 class CategorySerializer(serializers.ModelSerializer):

@@ -51,6 +51,9 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
+    USERNAME_FIELD = 'email'
+    objects = UserManager()
+    REQUIRED_FIELDS = []
     email = models.EmailField(_("e-mail address"), unique=True)
     company = models.CharField(
         max_length=30, verbose_name="Название компании", blank=True
@@ -60,7 +63,6 @@ class User(AbstractUser):
     username = models.CharField(
         _("username"),
         max_length=40,
-        unique=True,
         help_text=_(
             "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
         ),
@@ -69,7 +71,7 @@ class User(AbstractUser):
     )
     is_active = models.BooleanField(
         _("active"),
-        default=False,
+        default=True,
         help_text=_(
             "Designates whether this user should be treated as active. "
             "Unselect this instead of deleting accounts."
@@ -165,6 +167,7 @@ class ProductInfo(models.Model):
     )
     quantity = models.PositiveIntegerField(verbose_name="Количество")
     price = models.PositiveIntegerField(verbose_name="Цена")
+    price_rrc = models.PositiveIntegerField(verbose_name='Рекомендуемая розничная цена')
 
     class Meta:
         verbose_name = "Информация о продукте"
@@ -267,9 +270,6 @@ class Order(models.Model):
 
     def __str__(self):
         return f"{self.date_time} {self.status}"
-    # @property
-    # def sum(self):
-    #     return self.ordered_items.aggregate(total=Sum("quantity"))["total"]
 
 class OrderItem(models.Model):
     order = models.ForeignKey(
