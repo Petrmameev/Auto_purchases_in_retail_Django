@@ -57,9 +57,22 @@ class LoginAccountSerializer(serializers.Serializer):
         
 
 
-class AccountDetailsSerializer:
-    pass
+class AccountDetailsSerializer(serializers.ModelSerializer):
+    contacts = ContactSerializer(read_only=True, many=True)
 
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "company",
+            "position",
+            "contacts",
+            "type",
+        )
+        read_only_fields = ("id",)
 
 class PartnerStatusSerializer:
     pass
@@ -81,6 +94,18 @@ class ContactSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id",)
         extra_kwargs = {"user": {"write_only": True}}
+
+        def create(self, data):
+            data["user"] = self.context["request"].user
+            return super().create(data)
+
+        def update(self, data):
+            data["user"] = self.context["request"].user
+            return super().update(data)
+
+        def delete(self, data):
+            data["user"] = self.context["request"].user
+            return super().delete(data)
 
 
 class CategorySerializer(serializers.ModelSerializer):
