@@ -30,6 +30,7 @@ from backend.serializers import (AccountDetailsSerializer, CategorySerializer,
                                  PartnerStatusSerializer,
                                  ProductInfoSerializer, ShopSerializer)
 from backend.signals import new_order, new_user_registered, new_user_registered_signal_mail
+from backend.access import Owner
 
 
 class NewUserRegistrationView(APIView):
@@ -81,7 +82,7 @@ class AccountDetails(APIView):
 
     serializer = AccountDetailsSerializer
     queryset = User.objects.prefetch_related()
-    permission_classes = [IsAuthenticated]  # Доделать
+    permission_classes = [IsAuthenticated, Owner]
 
     def _get(self, request):
         user = request.user
@@ -291,7 +292,7 @@ class PartnerUpdate(APIView):
     Класс для обновления прайса от поставщика
     """
 
-    permission_classes = [IsAuthenticated]  # Доделать
+    permission_classes = [IsAuthenticated, Shop]
 
     def _post(self, request, *args, **kwargs):
         with open("./data/shop1.yaml", "r", encoding="utf-8") as updatefile:
@@ -347,15 +348,14 @@ class PartnerStatus(APIView):
 
     queryset = Shop.objects.all()
     serializer_class = PartnerStatusSerializer
-    permission_classes = [
-        IsAuthenticated,
-    ]  # Доделать
+    permission_classes = [IsAuthenticated, Owner, Shop]
 
 
 class PartnerOrders(APIView):
     """
     Класс для получения заказов поставщиками
     """
+    permission_classes = [IsAuthenticated, Shop]
     pass
 #
 #     def get(self, request, *args, **kwargs):
@@ -395,7 +395,7 @@ class ContactView(APIView):
 
     serializer_class = ContactSerializer
     queryset = Contact.objects.prefetch_related()
-    permission_classes = [IsAuthenticated]  # Доделать
+    permission_classes = [IsAuthenticated, Owner]
 
 
 class OrderView(APIView):
