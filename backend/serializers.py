@@ -1,17 +1,10 @@
 # Верстальщик
+from django.contrib.auth import authenticate
 from rest_framework import serializers
 
-from backend.models import (
-    User,
-    Category,
-    Shop,
-    ProductInfo,
-    Product,
-    ProductParameter,
-    OrderItem,
-    Order,
-    Contact,
-)
+from backend.models import (Category, Contact, Order, OrderItem, Product,
+                            ProductInfo, ProductParameter, Shop, User)
+
 
 class NewUserRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,21 +21,49 @@ class NewUserRegistrationSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id",)
 
-    def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = User(**validated_data)
+    def create(self, data):
+        password = data.pop("password")
+        user = User(**data)
         user.set_password(password)
         user.save()
         return user
 
-class ConfirmAccountSerializer():
+
+class ConfirmAccountSerializer(serializers.Serializer):
+    email = serializers.CharField(required=True)
+    password = serializers.CharField(max_length=60, required=True, write_only=True)
+
+    def validate(self, data):
+        email = data["email"]
+        token_request = data["token"]
+        token = ConfirmAccountSerializer.objects.filter(user__email=email, key=token_request).first()
+        if token is None:
+            raise serializers.ValidationError({"status": "Failure", "message": "Неверный Token"})
+        return token
+
+
+class LoginAccountSerializer(serializers.Serializer):
+    email = serializers.CharField(required=True)
+    password = serializers.CharField(max_length=20, required=True, write_only=True)
+
+    def validate(self, data):
+        email = data["email"]
+        password = data["password"]
+        user = authenticate(username=email, password=password)
+        if user is None or not user.is_active:
+            raise serializers.ValidationError({"status": "Failure", "message": "Неверное имя пользователя или пароль"})
+        return user
+
+        
+
+
+class AccountDetailsSerializer:
     pass
 
-class LoginAccountSerializer():
+
+class PartnerStatusSerializer:
     pass
 
-class AccountDetailsSerializer():
-    pass
 
 class ContactSerializer(serializers.ModelSerializer):
     class Meta:

@@ -51,7 +51,7 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     objects = UserManager()
     REQUIRED_FIELDS = []
     email = models.EmailField(_("e-mail address"), unique=True)
@@ -167,7 +167,7 @@ class ProductInfo(models.Model):
     )
     quantity = models.PositiveIntegerField(verbose_name="Количество")
     price = models.PositiveIntegerField(verbose_name="Цена")
-    price_rrc = models.PositiveIntegerField(verbose_name='Рекомендуемая розничная цена')
+    price_rrc = models.PositiveIntegerField(verbose_name="Рекомендуемая розничная цена")
 
     class Meta:
         verbose_name = "Информация о продукте"
@@ -270,6 +270,7 @@ class Order(models.Model):
 
     def __str__(self):
         return f"{self.date_time} {self.status}"
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(
