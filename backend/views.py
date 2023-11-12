@@ -41,7 +41,7 @@ class NewUserRegistrationView(APIView):
     serializer_class = NewUserRegistrationSerializer
     queryset = User.objects.all()
 
-    def _past(self, request, *args, **Kwargs):
+    def post(self, request, *args, **Kwargs):
         serializer = NewUserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -63,7 +63,7 @@ class ConfirmAccountView(APIView):
 
     serializer_class = ConfirmAccountSerializer
 
-    def _past(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         serializer = ConfirmAccountSerializer(data=request.data)
         if serializer.is_valid():
             token = serializer.validated_data
@@ -84,12 +84,12 @@ class AccountDetails(APIView):
     queryset = User.objects.prefetch_related()
     permission_classes = [IsAuthenticated, Owner]
 
-    def _get(self, request):
+    def get(self, request):
         user = request.user
         serializer = AccountDetailsSerializer(instance=user)
         return Response(serializer.data)
 
-    def _patch(self, request):
+    def patch(self, request):
         user = request.user
         data = request.data
         serializer = AccountDetailsSerializer(instance=user, data=data, partial=True)
@@ -169,30 +169,31 @@ class BasketView(APIView):
     """
     Класс для работы с корзиной пользователя
     """
+    permission_classes = [IsAuthenticated, Owner]
+    queryset = Order.objects.filter(status=True)
+    serializer_class = OrderSerializer
 
+    # получить корзину
+    def get(self, requset, *args, **kwargs):
+        basket = (
+            Order.objects.filter(user_id=request.user.id, status="basket")
+            .prefetch_related(
+                "ordered_items__product_info__product__category",
+                "ordered_items__product_info__product_parameters__parameter",
+            )
+            .annotate(
+                total_sum=Sum(
+                    F("ordered_items__quantity")
+                    * F("ordered_items__product_info__price")
+                )
+            )
+            .distinct()
+        )
 
-#     # получить корзину
-#     def get(self, request, *args, **kwargs):
-#         authenticated_user(request)
-#         basket = (
-#             Order.objects.filter(user_id=request.user.id, status="basket")
-#             .prefetch_related(
-#                 "ordered_items__product_info__product__category",
-#                 "ordered_items__product_info__product_parameters__parameter",
-#             )
-#             .annotate(
-#                 total_sum=Sum(
-#                     F("ordered_items__quantity")
-#                     * F("ordered_items__product_info__price")
-#                 )
-#             )
-#             .distinct()
-#         )
-#
-#         serializer = OrderSerializer(basket, many=True)
-#         return Response(serializer.data)
-#
-#     # редактировать корзину
+        serializer = OrderSerializer(basket, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    # редактировать корзину
 #     def post(self, request, *args, **kwargs):
 #         authenticated_user(request)
 #         items_string = request.data.get("items")
@@ -294,7 +295,7 @@ class PartnerUpdate(APIView):
 
     permission_classes = [IsAuthenticated, Shop]
 
-    def _post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         with open("./data/shop1.yaml", "r", encoding="utf-8") as updatefile:
             try:
                 data = yaml.safe_load(updatefile)
@@ -338,7 +339,7 @@ class PartnerUpdate(APIView):
                     value=value,
                 )
 
-        return Response({"Status": "Success", "Message": "Прайс обновлен"})
+        return Response({"Status": "Success", "Message": "Прайс обновлен"}, status=status.HTTP_200_OK)
 
 
 class PartnerStatus(APIView):
@@ -358,36 +359,30 @@ class PartnerOrders(APIView):
     permission_classes = [IsAuthenticated, Shop]
     pass
 #
-#     def get(self, request, *args, **kwargs):
-#         authenticated_user(request)
-#         if request.user.type != "shop":
-#             return JsonResponse(
-#                 {"Status": False, "Error": "Только для магазинов"}, status=403
-#             )
-#
-#         order = (
-#             Order.objects.filter(
-#                 ordered_items__product_info__shop__user_id=request.user.id
-#             )
-#             .exclude(status="basket")
-#             .prefetch_related(
-#                 "ordered_items__product_info__product__category",
-#                 "ordered_items__product_info__product_parameters__parameter",
-#             )
-#             .select_related("contact")
-#             .annotate(
-#                 total_sum=Sum(
-#                     F("ordered_items__quantity")
-#                     * F("ordered_items__product_info__price")
-#                 )
-#             )
-#             .distinct()
-#         )
-#
-#         serializer = OrderSerializer(order, many=True)
-#         return Response(serializer.data)
-#
-#
+    def get(self, request, *args, **kwargs):
+        order = (
+            Order.objects.filter(
+                ordered_items__product_info__shop__user_id=request.user.id
+            )
+            .exclude(status="basket")
+            .prefetch_related(
+                "ordered_items__product_info__product__category",
+                "ordered_items__product_info__product_parameters__parameter",
+            )
+            .select_related("contact")
+            .annotate(
+                total_sum=Sum(
+                    F("ordered_items__quantity")
+                    * F("ordered_items__product_info__price")
+                )
+            )
+            .distinct()
+        )
+
+        serializer = OrderSerializer(order, many=True)
+        return Response(serializer.data)
+
+
 class ContactView(APIView):
     """
     Класс для работы с контактами покупателей
