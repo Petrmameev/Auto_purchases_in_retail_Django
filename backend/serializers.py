@@ -16,7 +16,6 @@ class NewUserRegistrationSerializer(serializers.ModelSerializer):
             "email",
             "company",
             "position",
-            "contacts",
             "password",
         )
         read_only_fields = ("id",)
@@ -57,22 +56,6 @@ class LoginAccountSerializer(serializers.Serializer):
         
 
 
-class AccountDetailsSerializer(serializers.ModelSerializer):
-    contacts = ContactSerializer(read_only=True, many=True)
-
-    class Meta:
-        model = User
-        fields = (
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "company",
-            "position",
-            "contacts",
-            "type",
-        )
-        read_only_fields = ("id",)
 
 class PartnerStatusSerializer:
     pass
@@ -107,6 +90,23 @@ class ContactSerializer(serializers.ModelSerializer):
             data["user"] = self.context["request"].user
             return super().delete(data)
 
+
+class AccountDetailsSerializer(serializers.ModelSerializer):
+    contacts = ContactSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "company",
+            "position",
+            "contacts",
+            "type",
+        )
+        read_only_fields = ("id",)
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -189,9 +189,9 @@ class OrderItemCreateSerializer(OrderItemSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     ordered_items = OrderItemCreateSerializer(read_only=True, many=True)
-
-    total_sum = serializers.IntegerField()
+    total_sum = serializers.IntegerField(read_only=True)
     contact = ContactSerializer(read_only=True)
+    status = serializers.CharField(required=False)
 
     class Meta:
         model = Order
