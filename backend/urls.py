@@ -2,24 +2,26 @@ from django.urls import path
 from django_rest_passwordreset.views import (reset_password_confirm,
                                              reset_password_request_token)
 
-from backend.views import (AccountDetails, BasketView, CategoryView,
-                           ConfirmAccountView, ContactView, LoginAccount,
-                           OrderView, PartnerOrders, PartnerStatus,
-                           PartnerUpdate, ProductInfoView, NewUserRegistrationView,
-                           ShopView)
+from backend.views import (AccountDetailsView, BasketView, CategoryView,
+                           ConfirmAccountView, ContactView, LoginAccountView,
+                           NewUserRegistrationView, OrderView,
+                           PartnerOrdersView, PartnerStatusView,
+                           PartnerUpdateView, ProductInfoView, ShopView)
 
 app_name = "backend"
 urlpatterns = [
-    path("partner/update", PartnerUpdate.as_view(), name="partner-update"),
-    path("partner/status", PartnerStatus.as_view(), name="partner-status"),
-    path("partner/orders", PartnerOrders.as_view(), name="partner-orders"),
+    path("partner/update", PartnerUpdateView.as_view(), name="partner-update"),
+    path("partner/status", PartnerStatusView.as_view(), name="partner-status"),
+    path("partner/orders", PartnerOrdersView.as_view(), name="partner-orders"),
     path("user/register", NewUserRegistrationView.as_view(), name="user-register"),
     path(
-        "user/register/confirm", ConfirmAccountView.as_view(), name="user-register-confirm"
+        "user/register/confirm",
+        ConfirmAccountView.as_view(),
+        name="user-register-confirm",
     ),
-    path("user/details", AccountDetails.as_view(), name="user-details"),
+    path("user/details", AccountDetailsView.as_view(), name="user-details"),
     path("user/contact", ContactView.as_view(), name="user-contact"),
-    path("user/login", LoginAccount.as_view(), name="user-login"),
+    path("user/login", LoginAccountView.as_view(), name="user-login"),
     path("user/password_reset", reset_password_request_token, name="password-reset"),
     path(
         "user/password_reset/confirm",

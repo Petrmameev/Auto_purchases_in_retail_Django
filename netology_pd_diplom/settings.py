@@ -32,7 +32,7 @@ ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 
 # Application definition
 
-CSRF_TRUSTED_ORIGINS = ['http://*.http://localhost/admin/login/']
+CSRF_TRUSTED_ORIGINS = ["http://*.http://localhost/admin/login/"]
 
 
 INSTALLED_APPS = [
@@ -146,7 +146,7 @@ EMAIL_PORT = os.getenv("EMAIL_PORT")
 EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL")
 SERVER_EMAIL = EMAIL_HOST_USER
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
