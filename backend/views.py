@@ -19,9 +19,10 @@ from ujson import loads as load_json
 from yaml import Loader
 from yaml import load as load_yaml
 
-from backend.models import (User, Category, ConfirmEmailToken, Contact, Order,
+from backend.access import Owner
+from backend.models import (Category, ConfirmEmailToken, Contact, Order,
                             OrderItem, Parameter, Product, ProductInfo,
-                            ProductParameter, Shop)
+                            ProductParameter, Shop, User)
 from backend.serializers import (AccountDetailsSerializer, CategorySerializer,
                                  ConfirmAccountSerializer, ContactSerializer,
                                  LoginAccountSerializer,
@@ -29,8 +30,8 @@ from backend.serializers import (AccountDetailsSerializer, CategorySerializer,
                                  OrderItemSerializer, OrderSerializer,
                                  PartnerStatusSerializer,
                                  ProductInfoSerializer, ShopSerializer)
-from backend.signals import new_order, new_user_registered, new_user_registered_signal_mail
-from backend.access import Owner
+from backend.signals import (new_order, new_user_registered,
+                             new_user_registered_signal_mail)
 
 
 class NewUserRegistrationView(APIView):
@@ -75,7 +76,7 @@ class ConfirmAccountView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AccountDetails(APIView):
+class AccountDetailsView(APIView):
     """
     Класс для работы c данными пользователя
     """
@@ -99,7 +100,7 @@ class AccountDetails(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class LoginAccount(APIView):
+class LoginAccountView(APIView):
     serializer_class = LoginAccountSerializer
     """
     Класс для авторизации пользователей
@@ -139,36 +140,20 @@ class ProductInfoView(APIView):
     """
     Класс для поиска товаров
     """
-    pass
-#
-#     def get(self, request, *args, **kwargs):
-#         query = Q(shop__status=True)
-#         shop_id = request.query_params.get("shop_id")
-#         category_id = request.query_params.get("category_id")
-#
-#         if shop_id:
-#             query = query & Q(shop_id=shop_id)
-#
-#         if category_id:
-#             query = query & Q(product__category_id=category_id)
-#
-#         # фильтруем и отбрасываем дуликаты
-#         queryset = (
-#             ProductInfo.objects.filter(query)
-#             .select_related("shop", "product__category")
-#             .prefetch_related("product_parameters__parameter")
-#             .distinct()
-#         )
-#
-#         serializer = ProductInfoSerializer(queryset, many=True)
-#
-#         return Response(serializer.data)
-#
-#
+
+    queryset = (
+        ProductInfo.objects.select_related("shop", "product__category")
+        .prefetch_related("product_parameters__parameter")
+        .distinct()
+    )
+    serializer_class = ProductInfoSerializer
+
+
 class BasketView(APIView):
     """
     Класс для работы с корзиной пользователя
     """
+
     permission_classes = [IsAuthenticated, Owner]
     queryset = Order.objects.filter(status=True)
     serializer_class = OrderSerializer
@@ -176,7 +161,7 @@ class BasketView(APIView):
     # получить корзину
     def get(self, requset, *args, **kwargs):
         basket = (
-            Order.objects.filter(user_id=request.user.id, status="basket")
+            Order.objects.filter(user=self.request.user, status="basket")
             .prefetch_related(
                 "ordered_items__product_info__product__category",
                 "ordered_items__product_info__product_parameters__parameter",
@@ -193,102 +178,49 @@ class BasketView(APIView):
         serializer = OrderSerializer(basket, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    # добавить позиции в корзину
+    def post(self, request, *args, **kwargs):
+        serializer = OrderSerializer(
+            data=self.request.data, context={"request": request}
+        )
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {"status": "success", "messasge": "Товар добавлен в корзину"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # удалить товары из корзины
+    def delete(self, request):
+        order = Order.objects.filter(user=self.request.user, status="basket").first()
+        if order is None:
+            return Response(
+                {"status": "failure", "message": "Корзина уже пуста"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        order.delete()
+        return Response(
+            {"status": "success", "message": "Корзина очищена"},
+            status=status.HTTP_200_OK,
+        )
+
     # редактировать корзину
-#     def post(self, request, *args, **kwargs):
-#         authenticated_user(request)
-#         items_string = request.data.get("items")
-#         if items_string:
-#             try:
-#                 items_dict = load_json(items_string)
-#             except ValueError:
-#                 return JsonResponse(
-#                     {"Status": False, "Errors": "Неверный формат запроса"}
-#                 )
-#             else:
-#                 basket, _ = Order.objects.get_or_create(
-#                     user_id=request.user.id, status="basket"
-#                 )
-#                 objects_created = 0
-#                 for order_item in items_dict:
-#                     order_item.update({"order": basket.id})
-#                     serializer = OrderItemSerializer(data=order_item)
-#                     if serializer.is_valid():
-#                         try:
-#                             serializer.save()
-#                         except IntegrityError as error:
-#                             return JsonResponse({"Status": False, "Errors": str(error)})
-#                         else:
-#                             objects_created += 1
-#
-#                     else:
-#                         return JsonResponse(
-#                             {"Status": False, "Errors": serializer.errors}
-#                         )
-#
-#                 return JsonResponse(
-#                     {"Status": True, "Создано объектов": objects_created}
-#                 )
-#         return JsonResponse(
-#             {"Status": False, "Errors": "Не указаны все необходимые аргументы"}
-#         )
-#
-#     # удалить товары из корзины
-#     def delete(self, request, *args, **kwargs):
-#         authenticated_user(request)
-#         items_string = request.data.get("items")
-#         if items_string:
-#             items_list = items_string.split(",")
-#             basket, _ = Order.objects.get_or_create(
-#                 user_id=request.user.id, status="basket"
-#             )
-#             query = Q()
-#             objects_deleted = False
-#             for order_item_id in items_list:
-#                 if order_item_id.isdigit():
-#                     query = Q(order_id=basket.id, id=order_item_id)
-#                     objects_deleted = True
-#
-#             if objects_deleted:
-#                 deleted_count = OrderItem.objects.filter(query).delete()[0]
-#                 return JsonResponse({"Status": True, "Удалено объектов": deleted_count})
-#         return JsonResponse(
-#             {"Status": False, "Errors": "Не указаны все необходимые аргументы"}
-#         )
-#
-#     # добавить позиции в корзину
-#     def put(self, request, *args, **kwargs):
-#         authenticated_user(request)
-#         items_string = request.data.get("items")
-#         if items_string:
-#             try:
-#                 items_dict = load_json(items_string)
-#             except ValueError:
-#                 return JsonResponse(
-#                     {"Status": False, "Errors": "Неверный формат запроса"}
-#                 )
-#             else:
-#                 basket, _ = Order.objects.get_or_create(
-#                     user_id=request.user.id, status="basket"
-#                 )
-#                 objects_updated = 0
-#                 for order_item in items_dict:
-#                     if (
-#                         type(order_item["id"]) == int
-#                         and type(order_item["quantity"]) == int
-#                     ):
-#                         objects_updated += OrderItem.objects.filter(
-#                             order_id=basket.id, id=order_item["id"]
-#                         ).update(quantity=order_item["quantity"])
-#
-#                 return JsonResponse(
-#                     {"Status": True, "Обновлено объектов": objects_updated}
-#                 )
-#         return JsonResponse(
-#             {"Status": False, "Errors": "Не указаны все необходимые аргументы"}
-#         )
-#
-#
-class PartnerUpdate(APIView):
+
+    def put(self, request, *args, **kwargs):
+        serializer = OrderSerializer(
+            data=self.request.data, context={"request": request}
+        )
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {"status": "success", "message": "Корзина отредактирована"},
+                status=status.HTTP_200_OK,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class PartnerUpdateView(APIView):
     """
     Класс для обновления прайса от поставщика
     """
@@ -339,10 +271,13 @@ class PartnerUpdate(APIView):
                     value=value,
                 )
 
-        return Response({"Status": "Success", "Message": "Прайс обновлен"}, status=status.HTTP_200_OK)
+        return Response(
+            {"Status": "Success", "Message": "Прайс обновлен"},
+            status=status.HTTP_200_OK,
+        )
 
 
-class PartnerStatus(APIView):
+class PartnerStatusView(APIView):
     """
     Класс для работы со статусом поставщика
     """
@@ -352,13 +287,15 @@ class PartnerStatus(APIView):
     permission_classes = [IsAuthenticated, Owner, Shop]
 
 
-class PartnerOrders(APIView):
+class PartnerOrdersView(APIView):
     """
     Класс для получения заказов поставщиками
     """
+
     permission_classes = [IsAuthenticated, Shop]
-    pass
-#
+    serializer_class = OrderSerializer
+
+    #
     def get(self, request, *args, **kwargs):
         order = (
             Order.objects.filter(
@@ -397,7 +334,10 @@ class OrderView(APIView):
     """
     Класс для получения и размешения заказов пользователями
     """
+
     pass
+
+
 #     # получить мои заказы
 #     def get(self, request, *args, **kwargs):
 #         authenticated_user(request)

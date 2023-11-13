@@ -35,9 +35,13 @@ class ConfirmAccountSerializer(serializers.Serializer):
     def validate(self, data):
         email = data["email"]
         token_request = data["token"]
-        token = ConfirmAccountSerializer.objects.filter(user__email=email, key=token_request).first()
+        token = ConfirmAccountSerializer.objects.filter(
+            user__email=email, key=token_request
+        ).first()
         if token is None:
-            raise serializers.ValidationError({"status": "Failure", "message": "Неверный Token"})
+            raise serializers.ValidationError(
+                {"status": "Failure", "message": "Неверный Token"}
+            )
         return token
 
 
@@ -50,15 +54,19 @@ class LoginAccountSerializer(serializers.Serializer):
         password = data["password"]
         user = authenticate(username=email, password=password)
         if user is None or not user.is_active:
-            raise serializers.ValidationError({"status": "Failure", "message": "Неверное имя пользователя или пароль"})
+            raise serializers.ValidationError(
+                {"status": "Failure", "message": "Неверное имя пользователя или пароль"}
+            )
         return user
-
-        
-
 
 
 class PartnerStatusSerializer:
-    pass
+    name = serializers.CharField(max_length=30, required=False)
+    status = serializers.BooleanField(default=True)
+    class Meta:
+        model = Shop
+        fields = ("id", "name", "status",)
+        read_only_fields = ("id",)
 
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -82,9 +90,9 @@ class ContactSerializer(serializers.ModelSerializer):
             data["user"] = self.context["request"].user
             return super().create(data)
 
-        def update(self, data):
+        def update(self, contact, data):
             data["user"] = self.context["request"].user
-            return super().update(data)
+            return super().update(contact, data)
 
         def delete(self, data):
             data["user"] = self.context["request"].user
@@ -107,6 +115,7 @@ class AccountDetailsSerializer(serializers.ModelSerializer):
             "type",
         )
         read_only_fields = ("id",)
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -183,12 +192,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
         extra_kwargs = {"order": {"write_only": True}}
 
 
-class OrderItemCreateSerializer(OrderItemSerializer):
-    product_info = ProductInfoSerializer(read_only=True)
-
-
 class OrderSerializer(serializers.ModelSerializer):
-    ordered_items = OrderItemCreateSerializer(read_only=True, many=True)
+    ordered_items = OrderItemSerializer(read_only=True, many=True)
     total_sum = serializers.IntegerField(read_only=True)
     contact = ContactSerializer(read_only=True)
     status = serializers.CharField(required=False)
