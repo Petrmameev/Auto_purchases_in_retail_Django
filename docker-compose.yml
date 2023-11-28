@@ -3,7 +3,6 @@ version: '3.3'
 services:
   backend:
     build: .
-#    command: sh ./commands.sh
     command:
       - sh
       - -c
@@ -14,37 +13,42 @@ services:
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
-    depends_on:
-#      - postgres
-      - db
-#    expose:
-#      - 8000
-#  db:
-#    image: busybox
-#    volumes:
-#      - ./data:/data/db
-  db:
-    image: 'postgres'
     ports:
-      - 5432:5432
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+
+
+  db:
+    image: postgres
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_DB=netology
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-      - ./logs:/var/logs
+      - ./logs:/var/log
     restart: unless-stopped
+    env_file:
+      - .env
 
   nginx:
-    build: ./nginx
+    build:  ./nginx
+    ports:
+      - "80:80"
     depends_on:
       - backend
     volumes:
       - static_volume:/app/static
       - media_volume:/app/media
-    ports:
-      - "80:80"
+#    expose:
+#      - 80
+
+    restart: always
 
 volumes:
   postgres_data:
