@@ -47,7 +47,7 @@ class NewUserRegistrationView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             new_user_registered_signal_mail(user)
-            token, _ = ConfirmEmailToken.request.get_or_create(user_id=user.id)
+            token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.id)
             response = {
                 "status": "Success",
                 "message": "Учетная запись создана, на почту отправлен токен",
@@ -225,7 +225,7 @@ class PartnerUpdateView(APIView):
     Класс для обновления прайса от поставщика
     """
 
-    permission_classes = [IsAuthenticated, Shop]
+    # permission_classes = [IsAuthenticated, Shop]
 
     def post(self, request, *args, **kwargs):
         with open("./data/shop1.yaml", "r", encoding="utf-8") as updatefile:
