@@ -94,8 +94,8 @@ class User(AbstractUser):
 
 
 class Shop(models.Model):
-    name_shop = models.CharField(
-        max_length=30, unique=True, verbose_name="Название магазина"
+    name = models.CharField(
+        max_length=50, unique=True, verbose_name="Название магазина"
     )
     url_shop = models.URLField(verbose_name="Ссылка", null=True, blank=True)
     user = models.OneToOneField(
@@ -110,14 +110,14 @@ class Shop(models.Model):
     class Meta:
         verbose_name = "Магазин"
         verbose_name_plural = "Список магазинов"
-        ordering = ("name_shop",)
+        ordering = ("name",)
 
     def __str__(self):
-        return self.name_shop
+        return self.name
 
 
 class Category(models.Model):
-    name_category = models.CharField(max_length=30, verbose_name="Название категории")
+    name_category = models.CharField(max_length=50, verbose_name="Название категории")
     shops = models.ManyToManyField(
         Shop, verbose_name="Магазины", related_name="Категории", blank=True
     )
@@ -132,7 +132,7 @@ class Category(models.Model):
 
 
 class Product(models.Model):
-    name_product = models.CharField(max_length=30, verbose_name="Название товара")
+    name_product = models.CharField(max_length=70, verbose_name="Название товара")
     category = models.ForeignKey(
         Category,
         verbose_name="Категория",

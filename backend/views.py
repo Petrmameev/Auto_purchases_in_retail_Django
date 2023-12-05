@@ -242,7 +242,7 @@ class PartnerUpdateView(APIView):
 
         for category in data["categories"]:
             category_object, _ = Category.objects.get_or_create(
-                id=category["id"], name=category["name"]
+                id=category["id"], name_category=category["name"]
             )
             category_object.shops.add(shop.id)
             category_object.save()
@@ -251,20 +251,20 @@ class PartnerUpdateView(APIView):
 
         for item in data["goods"]:
             product, _ = Product.objects.get_or_create(
-                name=item["name"], category_id=item["category"]
+                name_product=item["name"], category_id=item["category"]
             )
 
             product_info = ProductInfo.objects.create(
-                product_id=product.id,
+                _product_id=product.id,
                 external_id=item["id"],
-                model=item["model"],
+                _model=item["model"],
                 price=item["price"],
                 price_rrc=item["price_rrc"],
                 quantity=item["quantity"],
                 shop_id=shop.id,
             )
             for name, value in item["parameters"].items():
-                parameter_object, _ = Parameter.objects.get_or_create(name=name)
+                parameter_object, _ = Parameter.objects.get_or_create(name_parameter=name)
                 ProductParameter.objects.create(
                     product_info_id=product_info.id,
                     parameter_id=parameter_object.id,
