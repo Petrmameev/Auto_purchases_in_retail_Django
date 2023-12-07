@@ -29,20 +29,21 @@ class NewUserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class ConfirmAccountSerializer(serializers.Serializer):
-    email = serializers.CharField(required=True)
-    password = serializers.CharField(max_length=60, required=True, write_only=True)
-
-    def validate(self, data):
-        email = data["email"]
-        token_request = data["token"]
-        token = ConfirmAccountSerializer.objects.filter(
-            user__email=email, key=token_request
-        ).first()
-        if token is None:
-            raise serializers.ValidationError(
-                {"status": "Failure", "message": "Неверный Token"}
-            )
-        return token
+    pass
+#     email = serializers.CharField(required=True)
+#     password = serializers.CharField(max_length=60, required=True, write_only=True)
+#
+#     def validate(self, data):
+#         email = data["email"]
+#         token_request = data["token"]
+#         token = ConfirmAccountSerializer.objects.filter(
+#             user__email=email, key=token_request
+#         ).first()
+#         if token is None:
+#             raise serializers.ValidationError(
+#                 {"status": "Failure", "message": "Неверный Token"}
+#             )
+#         return token
 
 
 class LoginAccountSerializer(serializers.Serializer):

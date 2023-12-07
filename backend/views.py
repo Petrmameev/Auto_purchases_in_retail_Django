@@ -46,12 +46,12 @@ class NewUserRegistrationView(APIView):
         serializer = NewUserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            new_user_registered_signal_mail(user)
-            token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.id)
+            # new_user_registered_signal_mail(user)
+            # token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.id)
             response = {
                 "status": "Success",
-                "message": "Учетная запись создана, на почту отправлен токен",
-                "token": {token.key},
+                # "message": "Учетная запись создана, на почту отправлен токен",
+                # "token": {token.key},
             }
             return Response(response, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -61,19 +61,20 @@ class ConfirmAccountView(APIView):
     """
     Класс для подтвердения почтового адреса
     """
-
-    serializer_class = ConfirmAccountSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = ConfirmAccountSerializer(data=request.data)
-        if serializer.is_valid():
-            token = serializer.validated_data
-            token.user.is_active = True
-            token.user.save()
-            token.delete()
-            response = {"status": "Success", "message": "Аккаунт подтвержден"}
-            return Response(response, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    pass
+#
+#     serializer_class = ConfirmAccountSerializer
+#
+#     def post(self, request, *args, **kwargs):
+#         serializer = ConfirmAccountSerializer(data=request.data)
+#         if serializer.is_valid():
+#             token = serializer.validated_data
+#             token.user.is_active = True
+#             token.user.save()
+#             token.delete()
+#             response = {"status": "Success", "message": "Аккаунт подтвержден"}
+#             return Response(response, status=status.HTTP_200_OK)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AccountDetailsView(APIView):
@@ -140,13 +141,30 @@ class ProductInfoView(APIView):
     """
     Класс для поиска товаров
     """
+    # queryset = (
+    #     ProductInfo.objects.select_related("shop", "product__category")
+    #     .prefetch_related("product_parameters__parameter")
+    #     .distinct()
+    # )
+    # serializer_class = ProductInfoSerializer
+    def get(self, request, *args, **kwargs):
+        query = Q(shop__status=True)
+        shop_id = request.query_params.get('shop_id')
+        category_id = request.query_params.get('category_id')
+        if shop_id:
+            query = query & Q(shop_id=shop_id)
 
-    queryset = (
-        ProductInfo.objects.select_related("shop", "product__category")
-        .prefetch_related("product_parameters__parameter")
-        .distinct()
-    )
-    serializer_class = ProductInfoSerializer
+        if category_id:
+            query = query & Q(category_id=category_id)
+
+        queryset = ProductInfo.objects.filter(query).select_related(
+            'shop', 'product__category').prefetch_related(
+            'product_parametres__parameter').distinct()
+
+        serializer = ProductInfoSerializer(queryset, many=True)
+
+        return Response(serializer.data)
+
 
 
 class BasketView(APIView):
@@ -255,9 +273,9 @@ class PartnerUpdateView(APIView):
             )
 
             product_info = ProductInfo.objects.create(
-                _product_id=product.id,
+                product_id=product.id,
                 external_id=item["id"],
-                _model=item["model"],
+                model=item["model"],
                 price=item["price"],
                 price_rrc=item["price_rrc"],
                 quantity=item["quantity"],
