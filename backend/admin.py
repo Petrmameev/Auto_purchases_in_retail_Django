@@ -84,8 +84,9 @@ class ContactAdmin(admin.ModelAdmin):
 
 @admin.register(ConfirmEmailToken)
 class ConfirmEmailTokenAdmin(admin.ModelAdmin):
-    list_display = (
-        "user",
-        "key",
-        "created_at",
-    )
+    pass
+    # list_display = (
+    #     "user",
+    #     "key",
+    #     "created_at",
+    # )
