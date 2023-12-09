@@ -132,7 +132,7 @@ class Category(models.Model):
 
 
 class Product(models.Model):
-    name_product = models.CharField(max_length=70, verbose_name="Название товара")
+    name = models.CharField(max_length=70, verbose_name="Название товара")
     category = models.ForeignKey(
         Category,
         verbose_name="Категория",
@@ -144,10 +144,10 @@ class Product(models.Model):
     class Meta:
         verbose_name = "Товар"
         verbose_name_plural = "Список товаров"
-        ordering = ("name_product",)
+        ordering = ("name",)
 
     def __str__(self):
-        self.name_product
+        self.name
 
 
 class ProductInfo(models.Model):
