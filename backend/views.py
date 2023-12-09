@@ -159,7 +159,7 @@ class ProductInfoView(APIView):
 
         queryset = ProductInfo.objects.filter(query).select_related(
             'shop', 'product__category').prefetch_related(
-            'product_parametres__parameter').distinct()
+            'product_parameters__parameter').distinct()
 
         serializer = ProductInfoSerializer(queryset, many=True)
 
@@ -172,7 +172,7 @@ class BasketView(APIView):
     Класс для работы с корзиной пользователя
     """
 
-    permission_classes = [IsAuthenticated, Owner]
+    # permission_classes = [IsAuthenticated, Owner]
     queryset = Order.objects.filter(status=True)
     serializer_class = OrderSerializer
 
@@ -269,7 +269,7 @@ class PartnerUpdateView(APIView):
 
         for item in data["goods"]:
             product, _ = Product.objects.get_or_create(
-                name_product=item["name"], category_id=item["category"]
+                name=item["name"], category_id=item["category"]
             )
 
             product_info = ProductInfo.objects.create(
@@ -302,7 +302,7 @@ class PartnerStatusView(APIView):
 
     queryset = Shop.objects.all()
     serializer_class = PartnerStatusSerializer
-    permission_classes = [IsAuthenticated, Owner, Shop]
+    # permission_classes = [IsAuthenticated, Owner, Shop]
 
 
 class PartnerOrdersView(APIView):

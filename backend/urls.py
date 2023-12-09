@@ -14,11 +14,11 @@ urlpatterns = [
     path("partner/status", PartnerStatusView.as_view(), name="partner-status"),
     path("partner/orders", PartnerOrdersView.as_view(), name="partner-orders"),
     path("user/register", NewUserRegistrationView.as_view(), name="user-register"),
-    path(
-        "user/register/confirm",
-        ConfirmAccountView.as_view(),
-        name="user-register-confirm",
-    ),
+    # path(
+    #     "user/register/confirm",
+    #     ConfirmAccountView.as_view(),
+    #     name="user-register-confirm",
+    # ),
     path("user/details", AccountDetailsView.as_view(), name="user-details"),
     path("user/contact", ContactView.as_view(), name="user-contact"),
     path("user/login", LoginAccountView.as_view(), name="user-login"),
