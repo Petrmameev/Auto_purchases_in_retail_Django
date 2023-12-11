@@ -36,7 +36,7 @@ from backend.signals import (new_order, new_user_registered,
 
 class NewUserRegistrationView(APIView):
     """
-    Класс для создания пользователья
+    Класс для создания пользователя
     """
 
     serializer_class = NewUserRegistrationSerializer
