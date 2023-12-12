@@ -3,7 +3,7 @@ from rest_framework.test import APIClient
 from models import User
 import django
 from django.conf import settings
-from rest_framework.authtoken.models import Token
+
 django.setup()
 settings.configure()
 
@@ -19,9 +19,9 @@ class NewUserRegistrationTest(TestCase):
             "email": "petr@mail.ru",
             "company": "D",
             "position": "K",
-            "password": "admin123admin"
+            "password": "admin123admin",
         }
-        response = self.client.post('/user/register', data)
+        response = self.client.post("/user/register", data)
 
         self.assertEqual(response.status_code, 201)
 
@@ -35,23 +35,17 @@ class NewUserRegistrationTest(TestCase):
         self.assertEqual(user.password, "admin123admin")
 
     def login_success_test(self):
-        data = {
-            "email": "petr@mail.ru",
-            "password": "admin123admin"
-        }
+        data = {"email": "petr@mail.ru", "password": "admin123admin"}
         user = User.objects.create_user(**data)
-        response = self.client.post('user/login', data)
+        response = self.client.post("user/login", data)
         self.assertEqual(response.status_code, 200)
-        self.assertIn('Token', response.data)
+        self.assertIn("Token", response.data)
         self.assertEqual(response.data["Status"], "Success")
 
     def login_failed_test(self):
-        data = {
-            "email": "pppppetr@mail.ru",
-            "password": "aaaadmin123admin"
-        }
+        data = {"email": "pppppetr@mail.ru", "password": "aaaadmin123admin"}
         user = User.objects.create_user(**data)
-        response = self.client.post('user/login', data)
+        response = self.client.post("user/login", data)
         self.assertEqual(response.status_code, 401)
 
     def login_failed_clear_field_test(self):
@@ -59,5 +53,5 @@ class NewUserRegistrationTest(TestCase):
             "email": "pppppetr@mail.ru",
         }
         user = User.objects.create_user(**data)
-        response = self.client.post('user/login', data)
+        response = self.client.post("user/login", data)
         self.assertEqual(response.status_code, 400)

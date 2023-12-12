@@ -84,13 +84,13 @@ class User(AbstractUser):
         default="buyer",
     )
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
     class Meta:
         verbose_name = "Пользователь"
         verbose_name_plural = "Список пользователей"
         ordering = ("email",)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 class Shop(models.Model):
@@ -113,7 +113,7 @@ class Shop(models.Model):
         ordering = ("name",)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} {self.user} {self.status}"
 
 
 class Category(models.Model):
@@ -147,7 +147,7 @@ class Product(models.Model):
         ordering = ("name",)
 
     def __str__(self):
-        self.name
+        return f"{self.name} ({self.category})"
 
 
 class ProductInfo(models.Model):
@@ -167,7 +167,9 @@ class ProductInfo(models.Model):
     )
     quantity = models.PositiveIntegerField(verbose_name="Количество")
     price = models.PositiveIntegerField(verbose_name="Цена")
-    price_rrc = models.PositiveIntegerField(verbose_name="Рекомендуемая розничная цена", default=0)
+    price_rrc = models.PositiveIntegerField(
+        verbose_name="Рекомендуемая розничная цена", default=0
+    )
 
     class Meta:
         verbose_name = "Информация о продукте"
@@ -177,6 +179,9 @@ class ProductInfo(models.Model):
                 fields=["product", "shop", "external_id"], name="unique_product_info"
             ),
         ]
+
+    def __str__(self):
+        return f"{self.model} ({self.product} {self.quantity} {self.price} {self.price_rrc})"
 
 
 class Parameter(models.Model):
@@ -216,6 +221,9 @@ class ProductParameter(models.Model):
                 fields=["product_info", "parameter"], name="unique_product_parameter"
             ),
         ]
+
+    def __str__(self):
+        return f"{self.product_info} ({self.parameter} {self.value}"
 
 
 class Contact(models.Model):
@@ -296,9 +304,14 @@ class OrderItem(models.Model):
             ),
         ]
 
+    def __str__(self):
+        return f"{self.order} ({self.product_info} {self.quantity}"
+
 
 class ConfirmEmailToken(models.Model):
     pass
+
+
 #     class Meta:
 #         verbose_name = "Токен подтверждения Email"
 #         verbose_name_plural = "Токены подтверждения Email"
