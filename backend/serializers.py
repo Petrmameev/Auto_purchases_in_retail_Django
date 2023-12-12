@@ -2,8 +2,17 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 
-from backend.models import (Category, Contact, Order, OrderItem, Product,
-                            ProductInfo, ProductParameter, Shop, User)
+from backend.models import (
+    Category,
+    Contact,
+    Order,
+    OrderItem,
+    Product,
+    ProductInfo,
+    ProductParameter,
+    Shop,
+    User,
+)
 
 
 class NewUserRegistrationSerializer(serializers.ModelSerializer):
@@ -30,6 +39,8 @@ class NewUserRegistrationSerializer(serializers.ModelSerializer):
 
 class ConfirmAccountSerializer(serializers.Serializer):
     pass
+
+
 #     email = serializers.CharField(required=True)
 #     password = serializers.CharField(max_length=60, required=True, write_only=True)
 #
@@ -64,9 +75,14 @@ class LoginAccountSerializer(serializers.Serializer):
 class PartnerStatusSerializer:
     name = serializers.CharField(max_length=30, required=False)
     status = serializers.BooleanField(default=True)
+
     class Meta:
         model = Shop
-        fields = ("id", "name", "status",)
+        fields = (
+            "id",
+            "name",
+            "status",
+        )
         read_only_fields = ("id",)
 
 

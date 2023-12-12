@@ -20,18 +20,37 @@ from yaml import Loader
 from yaml import load as load_yaml
 
 from backend.access import Owner
-from backend.models import (Category, ConfirmEmailToken, Contact, Order,
-                            OrderItem, Parameter, Product, ProductInfo,
-                            ProductParameter, Shop, User)
-from backend.serializers import (AccountDetailsSerializer, CategorySerializer,
-                                 ConfirmAccountSerializer, ContactSerializer,
-                                 LoginAccountSerializer,
-                                 NewUserRegistrationSerializer,
-                                 OrderItemSerializer, OrderSerializer,
-                                 PartnerStatusSerializer,
-                                 ProductInfoSerializer, ShopSerializer)
-from backend.signals import (new_order, new_user_registered,
-                             new_user_registered_signal_mail)
+from backend.models import (
+    Category,
+    ConfirmEmailToken,
+    Contact,
+    Order,
+    OrderItem,
+    Parameter,
+    Product,
+    ProductInfo,
+    ProductParameter,
+    Shop,
+    User,
+)
+from backend.serializers import (
+    AccountDetailsSerializer,
+    CategorySerializer,
+    ConfirmAccountSerializer,
+    ContactSerializer,
+    LoginAccountSerializer,
+    NewUserRegistrationSerializer,
+    OrderItemSerializer,
+    OrderSerializer,
+    PartnerStatusSerializer,
+    ProductInfoSerializer,
+    ShopSerializer,
+)
+from backend.signals import (
+    new_order,
+    new_user_registered,
+    new_user_registered_signal_mail,
+)
 
 
 class NewUserRegistrationView(APIView):
@@ -61,7 +80,10 @@ class ConfirmAccountView(APIView):
     """
     Класс для подтвердения почтового адреса
     """
+
     pass
+
+
 #
 #     serializer_class = ConfirmAccountSerializer
 #
@@ -141,6 +163,7 @@ class ProductInfoView(APIView):
     """
     Класс для поиска товаров
     """
+
     # queryset = (
     #     ProductInfo.objects.select_related("shop", "product__category")
     #     .prefetch_related("product_parameters__parameter")
@@ -149,22 +172,24 @@ class ProductInfoView(APIView):
     # serializer_class = ProductInfoSerializer
     def get(self, request, *args, **kwargs):
         query = Q(shop__status=True)
-        shop_id = request.query_params.get('shop_id')
-        category_id = request.query_params.get('category_id')
+        shop_id = request.query_params.get("shop_id")
+        category_id = request.query_params.get("category_id")
         if shop_id:
             query = query & Q(shop_id=shop_id)
 
         if category_id:
             query = query & Q(category_id=category_id)
 
-        queryset = ProductInfo.objects.filter(query).select_related(
-            'shop', 'product__category').prefetch_related(
-            'product_parameters__parameter').distinct()
+        queryset = (
+            ProductInfo.objects.filter(query)
+            .select_related("shop", "product__category")
+            .prefetch_related("product_parameters__parameter")
+            .distinct()
+        )
 
         serializer = ProductInfoSerializer(queryset, many=True)
 
         return Response(serializer.data)
-
 
 
 class BasketView(APIView):
@@ -282,7 +307,9 @@ class PartnerUpdateView(APIView):
                 shop_id=shop.id,
             )
             for name, value in item["parameters"].items():
-                parameter_object, _ = Parameter.objects.get_or_create(name_parameter=name)
+                parameter_object, _ = Parameter.objects.get_or_create(
+                    name_parameter=name
+                )
                 ProductParameter.objects.create(
                     product_info_id=product_info.id,
                     parameter_id=parameter_object.id,
