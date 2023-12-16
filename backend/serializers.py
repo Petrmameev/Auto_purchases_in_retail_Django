@@ -103,17 +103,17 @@ class ContactSerializer(serializers.ModelSerializer):
         read_only_fields = ("id",)
         extra_kwargs = {"user": {"write_only": True}}
 
-        def create(self, data):
-            data["user"] = self.context["request"].user
-            return super().create(data)
+        # def create(self, data):
+        #     data["user"] = self.context["request"].user
+        #     return super().create(data)
+        #
+        # def update(self, contact, data):
+        #     data["user"] = self.context["request"].user
+        #     return super().update(contact, data)
 
-        def update(self, contact, data):
-            data["user"] = self.context["request"].user
-            return super().update(contact, data)
-
-        def delete(self, data):
-            data["user"] = self.context["request"].user
-            return super().delete(data)
+        # def delete(self, data):
+        #     data["user"] = self.context["request"].user
+        #     return super().delete(data)
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):

@@ -1,0 +1,55 @@
+shop: ЭлектроWorld
+categories:
+  - id: 100
+    name: Ноутбуки
+  - id: 200
+    name: Телевизоры
+  - id: 300
+    name: Планшеты
+  - id: 15
+    name: Аксессуары
+
+goods:
+  - id: 54321
+    category: 100
+    model: lenovo/ideapad
+    name: Ноутбук Lenovo IdeaPad 15.6" (черный)
+    price: 50000
+    price_rrc: 54990
+    quantity: 10
+    parameters:
+      "Диагональ экрана (дюйм)": 15.6
+      "Разрешение экрана (пикс)": 1920x1080
+      "Процессор": Intel Core i5
+      "Оперативная память (Гб)": 8
+  - id: 98765
+    category: 200
+    model: samsung/qled-q70t
+    name: Телевизор Samsung QLED Q70T 55" (черный)
+    price: 80000
+    price_rrc: 89990
+    quantity: 5
+    parameters:
+      "Диагональ экрана (дюйм)": 55
+      "Разрешение экрана (пикс)": 3840x2160
+      "Технология дисплея": QLED
+  - id: 24680
+    category: 300
+    model: apple/ipad-pro
+    name: Планшет Apple iPad Pro 11" 2021 (серый)
+    price: 90000
+    price_rrc: 99990
+    quantity: 3
+    parameters:
+      "Диагональ экрана (дюйм)": 11
+      "Разрешение экрана (пикс)": 2388x1668
+      "Встроенная память (Гб)": 128
+  - id: 7777777
+    category: 15
+    model: apple/AirPods
+    name: Наушники AirPods
+    price: 111111
+    price_rrc: 999
+    quantity: 11
+    parameters:
+      "Диагональ (дюйм)": 9999
