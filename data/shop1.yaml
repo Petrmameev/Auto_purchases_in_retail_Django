@@ -56,3 +56,13 @@ goods:
       "Разрешение (пикс)": 1792x828
       "Встроенная память (Гб)": 256
       "Цвет": синий
+  - id: 7777777
+    category: 15
+    model: apple/AirPods
+    name: Наушники AirPods
+    price: 50000
+    price_rrc: 40000
+    quantity: 11
+    parameters:
+      "Диагональ (дюйм)": 9999
+

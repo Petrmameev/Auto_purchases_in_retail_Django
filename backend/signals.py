@@ -45,9 +45,11 @@ def new_user_registered_signal_mail(user):
 
     send_mail(
         # title:
-        f"Password Reset Token for {user.email}",
+        # f"Password Reset Token for {user.email}",
+        f"You have been registered",
         # message:
-        token.key,
+        # token.key,
+        f"You have been registered",
         # from:
         settings.EMAIL_HOST_USER,
         # to:

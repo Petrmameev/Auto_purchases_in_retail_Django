@@ -1,5 +1,5 @@
 from distutils.util import strtobool
-
+import os
 import yaml
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
@@ -8,6 +8,7 @@ from django.core.validators import URLValidator
 from django.db import IntegrityError
 from django.db.models import F, Q, Sum
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from requests import get
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -19,7 +20,7 @@ from ujson import loads as load_json
 from yaml import Loader
 from yaml import load as load_yaml
 
-from backend.access import Owner
+from backend.permissions import Owner, Shop
 from backend.models import (
     Category,
     ConfirmEmailToken,
@@ -69,7 +70,7 @@ class NewUserRegistrationView(APIView):
             # token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.id)
             response = {
                 "status": "Success",
-                # "message": "Учетная запись создана, на почту отправлен токен",
+                "message": "Учетная запись создана, на почту отправлено оповещение о регистрации",
                 # "token": {token.key},
             }
             return Response(response, status=status.HTTP_201_CREATED)
@@ -164,22 +165,14 @@ class ProductInfoView(APIView):
     Класс для поиска товаров
     """
 
-    # queryset = (
-    #     ProductInfo.objects.select_related("shop", "product__category")
-    #     .prefetch_related("product_parameters__parameter")
-    #     .distinct()
-    # )
-    # serializer_class = ProductInfoSerializer
     def get(self, request, *args, **kwargs):
         query = Q(shop__status=True)
         shop_id = request.query_params.get("shop_id")
         category_id = request.query_params.get("category_id")
         if shop_id:
             query = query & Q(shop_id=shop_id)
-
         if category_id:
-            query = query & Q(category_id=category_id)
-
+            query = query & Q(product__category__id=category_id)
         queryset = (
             ProductInfo.objects.filter(query)
             .select_related("shop", "product__category")
@@ -197,7 +190,7 @@ class BasketView(APIView):
     Класс для работы с корзиной пользователя
     """
 
-    # permission_classes = [IsAuthenticated, Owner]
+    permission_classes = [IsAuthenticated, Owner]
     queryset = Order.objects.filter(status=True)
     serializer_class = OrderSerializer
 
@@ -271,50 +264,54 @@ class PartnerUpdateView(APIView):
     # permission_classes = [IsAuthenticated, Shop]
 
     def post(self, request, *args, **kwargs):
-        with open("./data/shop1.yaml", "r", encoding="utf-8") as updatefile:
-            try:
-                data = yaml.safe_load(updatefile)
-            except yaml.YAMLError as yamlerror:
-                print(yamlerror)
-                return Response(
-                    {"Status": "Failure", "Message": "Ошибка загрузки файла"},
-                    status=status.HTTP_400_BAD_REQUEST,
+        data_1 = "./data/shop1.yaml"
+        data_2 = "./data/shop2.yaml"
+        data = [data_1, data_2]
+        for i in data:
+            with open(i, "r", encoding="utf-8") as updatefile:
+                try:
+                    data = yaml.safe_load(updatefile)
+                except yaml.YAMLError as yamlerror:
+                    print(yamlerror)
+                    return Response(
+                        {"Status": "Failure", "Message": "Ошибка загрузки файла"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+            print(data)
+            shop, _ = Shop.objects.get_or_create(name=data["shop"], user_id=request.user.id)
+
+            for category in data["categories"]:
+                category_object, _ = Category.objects.get_or_create(
+                    id=category["id"], name=category["name"]
                 )
-        print(data)
-        shop, _ = Shop.objects.get_or_create(name=data["shop"], user_id=request.user.id)
+                category_object.shops.add(shop.id)
+                category_object.save()
 
-        for category in data["categories"]:
-            category_object, _ = Category.objects.get_or_create(
-                id=category["id"], name_category=category["name"]
-            )
-            category_object.shops.add(shop.id)
-            category_object.save()
+            ProductInfo.objects.filter(shop_id=shop.id).delete()
 
-        ProductInfo.objects.filter(shop_id=shop.id).delete()
-
-        for item in data["goods"]:
-            product, _ = Product.objects.get_or_create(
-                name=item["name"], category_id=item["category"]
-            )
-
-            product_info = ProductInfo.objects.create(
-                product_id=product.id,
-                external_id=item["id"],
-                model=item["model"],
-                price=item["price"],
-                price_rrc=item["price_rrc"],
-                quantity=item["quantity"],
-                shop_id=shop.id,
-            )
-            for name, value in item["parameters"].items():
-                parameter_object, _ = Parameter.objects.get_or_create(
-                    name_parameter=name
+            for item in data["goods"]:
+                product, _ = Product.objects.get_or_create(
+                    name=item["name"], category_id=item["category"]
                 )
-                ProductParameter.objects.create(
-                    product_info_id=product_info.id,
-                    parameter_id=parameter_object.id,
-                    value=value,
+
+                product_info = ProductInfo.objects.create(
+                    product_id=product.id,
+                    external_id=item["id"],
+                    model=item["model"],
+                    price=item["price"],
+                    price_rrc=item["price_rrc"],
+                    quantity=item["quantity"],
+                    shop_id=shop.id,
                 )
+                for name, value in item["parameters"].items():
+                    parameter_object, _ = Parameter.objects.get_or_create(
+                        name_parameter=name
+                    )
+                    ProductParameter.objects.create(
+                        product_info_id=product_info.id,
+                        parameter_id=parameter_object.id,
+                        value=value,
+                    )
 
         return Response(
             {"Status": "Success", "Message": "Прайс обновлен"},
@@ -370,61 +367,79 @@ class ContactView(APIView):
     Класс для работы с контактами покупателей
     """
 
-    serializer_class = ContactSerializer
-    queryset = Contact.objects.prefetch_related()
     permission_classes = [IsAuthenticated, Owner]
+
+    # def get_object(self, contact_id):
+    #     return get_object_or_404(Contact, id=contact_id)
+
+    def post(self, request, *args, **kwargs):
+        request.data["user"] = request.user.id
+        serializer = ContactSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def put(self, request, *args, **kwargs):
+        request.data["user"] = request.user.id
+        # instance = self.get_object(contact_id)
+        serializer = ContactSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, *args, **kwargs):
+        contact = Contact.objects.all()
+        contact.delete()
+        return Response({"Status": "Success", "Message": "Контакты удалены"}, status=status.HTTP_204_NO_CONTENT)
 
 
 class OrderView(APIView):
     """
     Класс для получения и размешения заказов пользователями
     """
+    permission_classes = [IsAuthenticated, Owner]
 
-    pass
-
-
-#     # получить мои заказы
-#     def get(self, request, *args, **kwargs):
-#         authenticated_user(request)
-#         order = (
-#             Order.objects.filter(user_id=request.user.id)
-#             .exclude(status="basket")
-#             .prefetch_related(
-#                 "ordered_items__product_info__product__category",
-#                 "ordered_items__product_info__product_parameters__parameter",
-#             )
-#             .select_related("contact")
-#             .annotate(
-#                 total_sum=Sum(
-#                     F("ordered_items__quantity")
-#                     * F("ordered_items__product_info__price")
-#                 )
-#             )
-#             .distinct()
-#         )
-#
-#         serializer = OrderSerializer(order, many=True)
-#         return Response(serializer.data)
-#
-#     # разместить заказ из корзины
-#     def post(self, request, *args, **kwargs):
-#         authenticated_user(request)
-#         if {"id", "contact"}.issubset(request.data):
-#             if request.data["id"].isdigit():
-#                 try:
-#                     is_updated = Order.objects.filter(
-#                         user_id=request.user.id, id=request.data["id"]
-#                     ).update(contact_id=request.data["contact"], status="new")
-#                 except IntegrityError as error:
-#                     print(error)
-#                     return JsonResponse(
-#                         {"Status": False, "Errors": "Неправильно указаны аргументы"}
-#                     )
-#                 else:
-#                     if is_updated:
-#                         new_order.send(sender=self.__class__, user_id=request.user.id)
-#                         return JsonResponse({"Status": True})
-#
-#         return JsonResponse(
-#             {"Status": False, "Errors": "Не указаны все необходимые аргументы"}
-#         )
+    # получить мои заказы
+    # def get(self, request, *args, **kwargs):
+    #     order = (
+    #         Order.objects.filter(user_id=request.user.id)
+    #         .exclude(status="basket")
+    #         .prefetch_related(
+    #             "ordered_items__product_info__product__category",
+    #             "ordered_items__product_info__product_parameters__parameter",
+    #         )
+    #         .select_related("contact")
+    #         .annotate(
+    #             total_sum=Sum(
+    #                 F("ordered_items__quantity")
+    #                 * F("ordered_items__product_info__price")
+    #             )
+    #         )
+    #         .distinct()
+    #     )
+    #
+    #     serializer = OrderSerializer(order, many=True)
+    #     return Response(serializer.data)
+    #
+    # # разместить заказ из корзины
+    # def post(self, request, *args, **kwargs):
+    #     authenticated_user(request)
+    #     if {"id", "contact"}.issubset(request.data):
+    #         if request.data["id"].isdigit():
+    #             try:
+    #                 is_updated = Order.objects.filter(
+    #                     user_id=request.user.id, id=request.data["id"]
+    #                 ).update(contact_id=request.data["contact"], status="new")
+    #             except IntegrityError as error:
+    #                 print(error)
+    #                 return JsonResponse(
+    #                     {"Status": False, "Errors": "Неправильно указаны аргументы"}
+    #                 )
+    #             else:
+    #                 if is_updated:
+    #                     new_order.send(sender=self.__class__, user_id=request.user.id)
+    #                     return JsonResponse({"Status": True})
+    #
+    #     return JsonResponse(
+    #         {"Status": False, "Errors": "Не указаны все необходимые аргументы"}
+    #     )
