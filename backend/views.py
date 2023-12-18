@@ -12,7 +12,7 @@ from django.shortcuts import get_object_or_404
 from requests import get
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -41,6 +41,7 @@ from backend.serializers import (
     ContactSerializer,
     LoginAccountSerializer,
     NewUserRegistrationSerializer,
+    OrderConfirmSerializer,
     OrderItemSerializer,
     OrderSerializer,
     PartnerStatusSerializer,
@@ -190,7 +191,7 @@ class BasketView(APIView):
     Класс для работы с корзиной пользователя
     """
 
-    permission_classes = [IsAuthenticated, Owner]
+    permission_classes = [IsAuthenticated]
     queryset = Order.objects.filter(status=True)
     serializer_class = OrderSerializer
 
@@ -238,7 +239,7 @@ class BasketView(APIView):
         order.delete()
         return Response(
             {"status": "success", "message": "Корзина очищена"},
-            status=status.HTTP_200_OK,
+            status=status.HTTP_404_NOT_FOUND,
         )
 
     # редактировать корзину
@@ -319,14 +320,16 @@ class PartnerUpdateView(APIView):
         )
 
 
-class PartnerStatusView(APIView):
+class PartnerStatusView(RetrieveUpdateAPIView):
     """
     Класс для работы со статусом поставщика
     """
+    pass
+#     queryset = Shop.objects.all()
+#     serializer_class = PartnerStatusSerializer
+#     # permission_classes = [IsAuthenticated, Owner]
 
-    queryset = Shop.objects.all()
-    serializer_class = PartnerStatusSerializer
-    # permission_classes = [IsAuthenticated, Owner, Shop]
+
 
 
 class PartnerOrdersView(APIView):
@@ -395,51 +398,63 @@ class ContactView(APIView):
 
 class OrderView(APIView):
     """
-    Класс для получения и размешения заказов пользователями
+    Класс для получения заказов пользователями
     """
     permission_classes = [IsAuthenticated, Owner]
+    serializer = OrderSerializer
 
     # получить мои заказы
-    # def get(self, request, *args, **kwargs):
-    #     order = (
-    #         Order.objects.filter(user_id=request.user.id)
-    #         .exclude(status="basket")
-    #         .prefetch_related(
-    #             "ordered_items__product_info__product__category",
-    #             "ordered_items__product_info__product_parameters__parameter",
-    #         )
-    #         .select_related("contact")
-    #         .annotate(
-    #             total_sum=Sum(
-    #                 F("ordered_items__quantity")
-    #                 * F("ordered_items__product_info__price")
-    #             )
-    #         )
-    #         .distinct()
-    #     )
-    #
-    #     serializer = OrderSerializer(order, many=True)
-    #     return Response(serializer.data)
-    #
-    # # разместить заказ из корзины
-    # def post(self, request, *args, **kwargs):
-    #     authenticated_user(request)
-    #     if {"id", "contact"}.issubset(request.data):
-    #         if request.data["id"].isdigit():
-    #             try:
-    #                 is_updated = Order.objects.filter(
-    #                     user_id=request.user.id, id=request.data["id"]
-    #                 ).update(contact_id=request.data["contact"], status="new")
-    #             except IntegrityError as error:
-    #                 print(error)
-    #                 return JsonResponse(
-    #                     {"Status": False, "Errors": "Неправильно указаны аргументы"}
-    #                 )
-    #             else:
-    #                 if is_updated:
-    #                     new_order.send(sender=self.__class__, user_id=request.user.id)
-    #                     return JsonResponse({"Status": True})
-    #
-    #     return JsonResponse(
-    #         {"Status": False, "Errors": "Не указаны все необходимые аргументы"}
-    #     )
+    def get(self, request, *args, **kwargs):
+        order = (
+            Order.objects.filter(user_id=request.user.id)
+            .exclude(status="basket")
+            .prefetch_related(
+                "ordered_items__product_info__product__category",
+                "ordered_items__product_info__product_parameters__parameter",
+            )
+            .select_related("contact")
+            .annotate(
+                total_sum=Sum(
+                    F("ordered_items__quantity")
+                    * F("ordered_items__product_info__price")
+                )
+            )
+            .distinct()
+        )
+
+        serializer = OrderSerializer(order, many=True)
+        return Response(serializer.data)
+
+
+class OrderConfirmView(APIView):
+    """
+    Класс для размещения заказов пользователями
+    """
+    permission_classes = [IsAuthenticated, Owner]
+    serializer = OrderConfirmSerializer
+
+    # разместить заказ из корзины
+    def post(self, request, *args, **kwargs):
+        serializer = OrderConfirmView(data=request.data, context={"request": request})
+        if serializer.is_valid(raise_exception=True):
+            basket = (Order.objects.filter(user=self.request.user, status="basket").prefetch_related("ordered_items").annotate(
+                total_sum=Sum(
+                    F("ordered_items__quantity")
+                    * F("ordered_items__product_info__price")
+                )
+            )
+            .first()
+        )
+            response = OrderSerializer(basket)
+            user = request.user
+            order = serializer.validated_data
+            order.status = "new"
+            order.save()
+
+        #     Оповещение о созданном заказе
+
+
+            return Response({"Status": "Success", "Message": "Заказ создан"}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
