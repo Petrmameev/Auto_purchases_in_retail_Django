@@ -72,18 +72,19 @@ class LoginAccountSerializer(serializers.Serializer):
         return user
 
 
-class PartnerStatusSerializer:
-    name = serializers.CharField(max_length=30, required=False)
-    status = serializers.BooleanField(default=True)
-
-    class Meta:
-        model = Shop
-        fields = (
-            "id",
-            "name",
-            "status",
-        )
-        read_only_fields = ("id",)
+class PartnerStatusSerializer(serializers.ModelSerializer):
+    pass
+#     name = serializers.CharField(max_length=30, required=False)
+#     status = serializers.BooleanField(default=True)
+#
+#     class Meta:
+#         model = Shop
+#         fields = (
+#             "id",
+#             "name",
+#             "status",
+#         )
+#         read_only_fields = ("id",)
 
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -209,8 +210,9 @@ class OrderItemSerializer(serializers.ModelSerializer):
         extra_kwargs = {"order": {"write_only": True}}
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class OrderSerializer(serializers.Serializer):
     ordered_items = OrderItemSerializer(read_only=True, many=True)
+    items = OrderItemSerializer(write_only=True, many=True)
     total_sum = serializers.IntegerField(read_only=True)
     contact = ContactSerializer(read_only=True)
     status = serializers.CharField(required=False)
@@ -224,5 +226,36 @@ class OrderSerializer(serializers.ModelSerializer):
             "dt",
             "total_sum",
             "contact",
+            "items",
         )
         read_only_fields = ("id",)
+
+#         Валидировать данные
+
+    def create(self, data):
+        user = self.context["request"].user
+        items = data.pop("items")
+
+        order, _ = Order.objects.get_or_create(**data, user_id=user.id, status="basket")
+        for item in items:
+            product_id = item.get("product_info")
+            quantity = item.get("quantity, 1")
+            OrderItem.objects.update_or_create(order=order, product_info=product_id, defaults={"quantity: quantity"})
+
+        return order
+
+    def update(self,instance, data):
+        instance.ordered_items.all().delete()
+        instance = super().create(**data)
+        return instance
+
+
+class OrderConfirmSerializer(serializers.Serializer):
+    id = serializers.IntegerField(write_only=True)
+    contact = serializers.IntegerField(write_only=True)
+
+    class Meta:
+        model = Order
+        fields = ("id", "contact", )
+
+    #         Валидировать данные
