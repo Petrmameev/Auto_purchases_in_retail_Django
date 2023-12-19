@@ -6,7 +6,7 @@ class Owner(permissions.BasePermission):
         return obj.user == request.user
 
 
-class Shop(permissions.BasePermission):
+class IsShop(permissions.BasePermission):
     def has_permission(self, request, view):
         user = request.user
         return user.type == "shop"
