@@ -20,10 +20,9 @@ from ujson import loads as load_json
 from yaml import Loader
 from yaml import load as load_yaml
 
-from backend.permissions import Owner, Shop
+from backend.permissions import Owner, IsShop
 from backend.models import (
     Category,
-    ConfirmEmailToken,
     Contact,
     Order,
     OrderItem,
@@ -37,7 +36,6 @@ from backend.models import (
 from backend.serializers import (
     AccountDetailsSerializer,
     CategorySerializer,
-    ConfirmAccountSerializer,
     ContactSerializer,
     LoginAccountSerializer,
     NewUserRegistrationSerializer,
@@ -68,37 +66,12 @@ class NewUserRegistrationView(APIView):
         if serializer.is_valid():
             user = serializer.save()
             # new_user_registered_signal_mail(user)
-            # token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.id)
             response = {
                 "status": "Success",
                 "message": "Учетная запись создана, на почту отправлено оповещение о регистрации",
-                # "token": {token.key},
             }
             return Response(response, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class ConfirmAccountView(APIView):
-    """
-    Класс для подтвердения почтового адреса
-    """
-
-    pass
-
-
-#
-#     serializer_class = ConfirmAccountSerializer
-#
-#     def post(self, request, *args, **kwargs):
-#         serializer = ConfirmAccountSerializer(data=request.data)
-#         if serializer.is_valid():
-#             token = serializer.validated_data
-#             token.user.is_active = True
-#             token.user.save()
-#             token.delete()
-#             response = {"status": "Success", "message": "Аккаунт подтвержден"}
-#             return Response(response, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class AccountDetailsView(APIView):
@@ -262,7 +235,7 @@ class PartnerUpdateView(APIView):
     Класс для обновления прайса от поставщика
     """
 
-    # permission_classes = [IsAuthenticated, Shop]
+    permission_classes = [IsAuthenticated, IsShop]
 
     def post(self, request, *args, **kwargs):
         data_1 = "./data/shop1.yaml"
@@ -279,7 +252,9 @@ class PartnerUpdateView(APIView):
                         status=status.HTTP_400_BAD_REQUEST,
                     )
             print(data)
-            shop, _ = Shop.objects.get_or_create(name=data["shop"], user_id=request.user.id)
+            shop, _ = Shop.objects.get_or_create(
+                name=data["shop"], user_id=request.user.id
+            )
 
             for category in data["categories"]:
                 category_object, _ = Category.objects.get_or_create(
@@ -324,12 +299,10 @@ class PartnerStatusView(RetrieveUpdateAPIView):
     """
     Класс для работы со статусом поставщика
     """
-    pass
-#     queryset = Shop.objects.all()
-#     serializer_class = PartnerStatusSerializer
-#     # permission_classes = [IsAuthenticated, Owner]
 
-
+    queryset = Shop.objects.all()
+    serializer_class = PartnerStatusSerializer
+    permission_classes = [IsAuthenticated, Owner]
 
 
 class PartnerOrdersView(APIView):
@@ -337,7 +310,7 @@ class PartnerOrdersView(APIView):
     Класс для получения заказов поставщиками
     """
 
-    permission_classes = [IsAuthenticated, Shop]
+    permission_classes = [IsAuthenticated, IsShop]
     serializer_class = OrderSerializer
 
     #
@@ -372,9 +345,6 @@ class ContactView(APIView):
 
     permission_classes = [IsAuthenticated, Owner]
 
-    # def get_object(self, contact_id):
-    #     return get_object_or_404(Contact, id=contact_id)
-
     def post(self, request, *args, **kwargs):
         request.data["user"] = request.user.id
         serializer = ContactSerializer(data=request.data)
@@ -393,13 +363,17 @@ class ContactView(APIView):
     def delete(self, request, *args, **kwargs):
         contact = Contact.objects.all()
         contact.delete()
-        return Response({"Status": "Success", "Message": "Контакты удалены"}, status=status.HTTP_204_NO_CONTENT)
+        return Response(
+            {"Status": "Success", "Message": "Контакты удалены"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
 
 class OrderView(APIView):
     """
     Класс для получения заказов пользователями
     """
+
     permission_classes = [IsAuthenticated, Owner]
     serializer = OrderSerializer
 
@@ -430,6 +404,7 @@ class OrderConfirmView(APIView):
     """
     Класс для размещения заказов пользователями
     """
+
     permission_classes = [IsAuthenticated, Owner]
     serializer = OrderConfirmSerializer
 
@@ -437,24 +412,28 @@ class OrderConfirmView(APIView):
     def post(self, request, *args, **kwargs):
         serializer = OrderConfirmView(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
-            basket = (Order.objects.filter(user=self.request.user, status="basket").prefetch_related("ordered_items").annotate(
-                total_sum=Sum(
-                    F("ordered_items__quantity")
-                    * F("ordered_items__product_info__price")
+            basket = (
+                Order.objects.filter(user=self.request.user, status="basket")
+                .prefetch_related("ordered_items")
+                .annotate(
+                    total_sum=Sum(
+                        F("ordered_items__quantity")
+                        * F("ordered_items__product_info__price")
+                    )
                 )
+                .first()
             )
-            .first()
-        )
             response = OrderSerializer(basket)
             user = request.user
             order = serializer.validated_data
             order.status = "new"
             order.save()
 
-        #     Оповещение о созданном заказе
+            #     Оповещение о созданном заказе
 
-
-            return Response({"Status": "Success", "Message": "Заказ создан"}, status=status.HTTP_201_CREATED)
+            return Response(
+                {"Status": "Success", "Message": "Заказ создан"},
+                status=status.HTTP_201_CREATED,
+            )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-

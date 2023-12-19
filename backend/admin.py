@@ -3,7 +3,6 @@ from django.contrib.auth.admin import UserAdmin
 
 from backend.models import (
     Category,
-    ConfirmEmailToken,
     Contact,
     Order,
     OrderItem,
@@ -90,13 +89,3 @@ class OrderItemAdmin(admin.ModelAdmin):
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
     pass
-
-
-@admin.register(ConfirmEmailToken)
-class ConfirmEmailTokenAdmin(admin.ModelAdmin):
-    pass
-    # list_display = (
-    #     "user",
-    #     "key",
-    #     "created_at",
-    # )

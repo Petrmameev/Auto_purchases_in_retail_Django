@@ -37,26 +37,6 @@ class NewUserRegistrationSerializer(serializers.ModelSerializer):
         return user
 
 
-class ConfirmAccountSerializer(serializers.Serializer):
-    pass
-
-
-#     email = serializers.CharField(required=True)
-#     password = serializers.CharField(max_length=60, required=True, write_only=True)
-#
-#     def validate(self, data):
-#         email = data["email"]
-#         token_request = data["token"]
-#         token = ConfirmAccountSerializer.objects.filter(
-#             user__email=email, key=token_request
-#         ).first()
-#         if token is None:
-#             raise serializers.ValidationError(
-#                 {"status": "Failure", "message": "Неверный Token"}
-#             )
-#         return token
-
-
 class LoginAccountSerializer(serializers.Serializer):
     email = serializers.CharField(required=True)
     password = serializers.CharField(max_length=20, required=True, write_only=True)
@@ -73,18 +53,21 @@ class LoginAccountSerializer(serializers.Serializer):
 
 
 class PartnerStatusSerializer(serializers.ModelSerializer):
-    pass
-#     name = serializers.CharField(max_length=30, required=False)
-#     status = serializers.BooleanField(default=True)
-#
-#     class Meta:
-#         model = Shop
-#         fields = (
-#             "id",
-#             "name",
-#             "status",
-#         )
-#         read_only_fields = ("id",)
+    name = serializers.CharField(max_length=30, required=False)
+    status = serializers.BooleanField(default=True)
+    url = serializers.URLField(required=False)
+    file_name = serializers.CharField(max_length=50, required=False)
+
+    class Meta:
+        model = Shop
+        fields = (
+            "id",
+            "name",
+            "status",
+            "url",
+            "file_name",
+        )
+        read_only_fields = ("id",)
 
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -103,18 +86,6 @@ class ContactSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id",)
         extra_kwargs = {"user": {"write_only": True}}
-
-        # def create(self, data):
-        #     data["user"] = self.context["request"].user
-        #     return super().create(data)
-        #
-        # def update(self, contact, data):
-        #     data["user"] = self.context["request"].user
-        #     return super().update(contact, data)
-
-        # def delete(self, data):
-        #     data["user"] = self.context["request"].user
-        #     return super().delete(data)
 
 
 class AccountDetailsSerializer(serializers.ModelSerializer):
@@ -230,7 +201,7 @@ class OrderSerializer(serializers.Serializer):
         )
         read_only_fields = ("id",)
 
-#         Валидировать данные
+    #         Валидировать данные
 
     def create(self, data):
         user = self.context["request"].user
@@ -240,11 +211,13 @@ class OrderSerializer(serializers.Serializer):
         for item in items:
             product_id = item.get("product_info")
             quantity = item.get("quantity, 1")
-            OrderItem.objects.update_or_create(order=order, product_info=product_id, defaults={"quantity: quantity"})
+            OrderItem.objects.update_or_create(
+                order=order, product_info=product_id, defaults={"quantity: quantity"}
+            )
 
         return order
 
-    def update(self,instance, data):
+    def update(self, instance, data):
         instance.ordered_items.all().delete()
         instance = super().create(**data)
         return instance
@@ -256,6 +229,9 @@ class OrderConfirmSerializer(serializers.Serializer):
 
     class Meta:
         model = Order
-        fields = ("id", "contact", )
+        fields = (
+            "id",
+            "contact",
+        )
 
     #         Валидировать данные
