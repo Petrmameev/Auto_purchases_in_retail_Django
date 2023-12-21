@@ -80,7 +80,7 @@ class User(AbstractUser):
         max_length=5,
         verbose_name="Тип пользователя",
         choices=USER_TYPE_CHOICES,
-        default="buyer",
+        default="shop",
     )
 
     class Meta:
