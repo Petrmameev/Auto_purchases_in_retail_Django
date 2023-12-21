@@ -26,6 +26,7 @@ class NewUserRegistrationSerializer(serializers.ModelSerializer):
             "company",
             "position",
             "password",
+
         )
         read_only_fields = ("id",)
 
@@ -206,7 +207,6 @@ class OrderSerializer(serializers.Serializer):
     def create(self, data):
         user = self.context["request"].user
         items = data.pop("items")
-
         order, _ = Order.objects.get_or_create(**data, user_id=user.id, status="basket")
         for item in items:
             product_id = item.get("product_info")
@@ -214,7 +214,6 @@ class OrderSerializer(serializers.Serializer):
             OrderItem.objects.update_or_create(
                 order=order, product_info=product_id, defaults={"quantity: quantity"}
             )
-
         return order
 
     def update(self, instance, data):

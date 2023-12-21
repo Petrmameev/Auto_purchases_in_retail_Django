@@ -191,7 +191,7 @@ class BasketView(APIView):
     # добавить позиции в корзину
     def post(self, request, *args, **kwargs):
         serializer = OrderSerializer(
-            data=self.request.data, context={"request": request}
+            data=request.data, context={"request": request}
         )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -251,9 +251,9 @@ class PartnerUpdateView(APIView):
                         {"Status": "Failure", "Message": "Ошибка загрузки файла"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            print(data)
             shop, _ = Shop.objects.get_or_create(
-                name=data["shop"], user_id=request.user.id
+                name=data["shop"]
+                # , user_id=request.user.id
             )
 
             for category in data["categories"]:
@@ -303,6 +303,7 @@ class PartnerStatusView(RetrieveUpdateAPIView):
     queryset = Shop.objects.all()
     serializer_class = PartnerStatusSerializer
     permission_classes = [IsAuthenticated, Owner]
+    lookup_field = 'id'
 
 
 class PartnerOrdersView(APIView):
