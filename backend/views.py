@@ -158,6 +158,16 @@ class ProductInfoView(APIView):
 
         return Response(serializer.data)
 
+    def post(self, request, *args, **kwargs):
+        serializer = ProductInfoSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(
+                {"status": "success", "message": "Информация о товаре сформирована"},
+                status=status.HTTP_201_CREATED,
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class BasketView(APIView):
     """
@@ -191,8 +201,8 @@ class BasketView(APIView):
     # добавить позиции в корзину
     def post(self, request, *args, **kwargs):
         order, _ = Order.objects.get_or_create(user=self.request.user, status="basket")
-        serializer = OrderSerializer(order,
-            data=request.data, context={"request": request}
+        serializer = OrderSerializer(
+            order, data=request.data, context={"request": request}
         )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
@@ -219,9 +229,7 @@ class BasketView(APIView):
     # редактировать корзину
 
     def put(self, request, *args, **kwargs):
-        serializer = OrderSerializer(
-            data=request.data, context={"request": request}
-        )
+        serializer = OrderSerializer(data=request.data, context={"request": request})
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(
@@ -304,7 +312,7 @@ class PartnerStatusView(RetrieveUpdateAPIView):
     queryset = Shop.objects.all()
     serializer_class = PartnerStatusSerializer
     permission_classes = [IsAuthenticated, Owner]
-    lookup_field = 'id'
+    lookup_field = "id"
 
 
 class PartnerOrdersView(APIView):
@@ -412,7 +420,9 @@ class OrderConfirmView(APIView):
 
     # разместить заказ из корзины
     def post(self, request, *args, **kwargs):
-        serializer = OrderConfirmView(data=request.data, context={"request": request})
+        serializer = OrderConfirmSerializer(
+            data=request.data, context={"request": request}
+        )
         if serializer.is_valid(raise_exception=True):
             basket = (
                 Order.objects.filter(user=self.request.user, status="basket")
@@ -427,9 +437,7 @@ class OrderConfirmView(APIView):
             )
             response = OrderSerializer(basket)
             user = request.user
-            order = serializer.validated_data
-            order.status = "new"
-            order.save()
+            order = serializer.save(status="new")
 
             #     Оповещение о созданном заказе
 

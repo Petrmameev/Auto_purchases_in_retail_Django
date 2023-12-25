@@ -1,5 +1,6 @@
 # Верстальщик
 from django.contrib.auth import authenticate
+from django.db.models import Q
 from rest_framework import serializers
 
 from backend.models import (
@@ -182,7 +183,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         extra_kwargs = {"order": {"write_only": True}}
 
 
-class OrderSerializer(serializers.Serializer):
+class OrderSerializer(serializers.ModelSerializer):
     ordered_items = OrderItemSerializer(read_only=True, many=True)
     items = OrderItemSerializer(write_only=True, many=True)
     total_sum = serializers.IntegerField(read_only=True)
@@ -195,14 +196,26 @@ class OrderSerializer(serializers.Serializer):
             "id",
             "ordered_items",
             "status",
-            "dt",
+            "date_time",
             "total_sum",
             "contact",
             "items",
         )
         read_only_fields = ("id",)
+    def validate(self, data):
+        items = data["items"]
+        for item in items:
+            product_info = item.get("product_info")
+            quantity = item.get("quantity")
+            product = ProductInfo.objects.filter(id=product_info.id).first()
+            if not product:
+                raise serializers.ValidationError({"status": "failure", "message": "Такого продукта нет"})
+            if quantity <= 0:
+                raise serializers.ValidationError({"status": "failure", "message": "Продукта нет в наличии"})
+            if quantity > product.quantity:
+                raise serializers.ValidationError({"status": "failure", "message": "Нет такого количества"})
+            return data
 
-    #         Валидировать данные
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -237,4 +250,26 @@ class OrderConfirmSerializer(serializers.Serializer):
             "contact",
         )
 
-    #         Валидировать данные
+    def validate(self, data):
+        user = self.context["request"].user
+        order_id = data.get("id")
+        contact_id = data.get("contact")
+        contact = Contact.objects.filter(Q(user_id=user.id) & Q(id=contact_id)).first()
+        order = Order.objects.filter(Q(id=order_id) & Q(user_id=user.id)).first()
+        status = order.status
+        order.contact = contact
+        if not order:
+            raise serializers.ValidationError({"status": "failure", "message": "Такого заказа не существует"})
+        if not status == "basket":
+            raise serializers.ValidationError({"status": "failure", "message": "Неверный статус заказа"})
+        if not order.contact:
+            raise serializers.ValidationError({"status": "failure", "message": "Не указан контакт"})
+        if not contact.city:
+            raise serializers.ValidationError({"status": "failure", "message": "Не указан город"})
+        if not contact.street:
+            raise serializers.ValidationError({"status": "failure", "message": "Не указана улица"})
+        if not contact.house:
+            raise serializers.ValidationError({"status": "failure", "message": "Не указано строение"})
+        if not contact.phone:
+            raise serializers.ValidationError({"status": "failure", "message": "Не указан номер телефона"})
+        return order

@@ -12,6 +12,7 @@ from backend.views import (
     LoginAccountView,
     NewUserRegistrationView,
     OrderView,
+    OrderConfirmView,
     PartnerOrdersView,
     PartnerStatusView,
     PartnerUpdateView,
@@ -33,4 +34,5 @@ urlpatterns = [
     path("products", ProductInfoView.as_view(), name="shops"),
     path("basket", BasketView.as_view(), name="basket"),
     path("order", OrderView.as_view(), name="order"),
+    path("order/confirm", OrderConfirmView.as_view(), name="order_confirm"),
 ]
