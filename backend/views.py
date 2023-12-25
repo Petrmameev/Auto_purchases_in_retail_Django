@@ -165,7 +165,7 @@ class BasketView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
-    queryset = Order.objects.filter(status=True)
+    # queryset = Order.objects.filter(status=True)
     serializer_class = OrderSerializer
 
     # получить корзину
@@ -190,7 +190,8 @@ class BasketView(APIView):
 
     # добавить позиции в корзину
     def post(self, request, *args, **kwargs):
-        serializer = OrderSerializer(
+        order, _ = Order.objects.get_or_create(user=self.request.user, status="basket")
+        serializer = OrderSerializer(order,
             data=request.data, context={"request": request}
         )
         if serializer.is_valid(raise_exception=True):
@@ -219,7 +220,7 @@ class BasketView(APIView):
 
     def put(self, request, *args, **kwargs):
         serializer = OrderSerializer(
-            data=self.request.data, context={"request": request}
+            data=request.data, context={"request": request}
         )
         if serializer.is_valid(raise_exception=True):
             serializer.save()

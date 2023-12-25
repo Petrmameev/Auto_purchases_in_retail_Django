@@ -204,21 +204,25 @@ class OrderSerializer(serializers.Serializer):
 
     #         Валидировать данные
 
-    def create(self, data):
+    def create(self, validated_data):
         user = self.context["request"].user
-        items = data.pop("items")
-        order, _ = Order.objects.get_or_create(**data, user_id=user.id, status="basket")
+        items = validated_data.get("items")
+        order = Order.objects.create(user=user, status="basket")
         for item in items:
-            product_id = item.get("product_info")
-            quantity = item.get("quantity, 1")
-            OrderItem.objects.update_or_create(
-                order=order, product_info=product_id, defaults={"quantity: quantity"}
-            )
+            product_id = item.get("product_info").id
+            quantity = item.get("quantity") or 1
+            OrderItem.objects.create(
+                order=order, product_info_id=product_id, quantity=quantity)
         return order
 
-    def update(self, instance, data):
+    def update(self, instance, validated_data):
+        items = validated_data.get("items")
         instance.ordered_items.all().delete()
-        instance = super().create(**data)
+        for item in items:
+            product_id = item.get("product_info").id
+            quantity = item.get("quantity") or 1
+            OrderItem.objects.create(
+                order=instance, product_info_id=product_id, quantity=quantity)
         return instance
 
 
