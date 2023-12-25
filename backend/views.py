@@ -437,8 +437,9 @@ class OrderConfirmView(APIView):
             )
             response = OrderSerializer(basket)
             user = request.user
-            order = serializer.save(status="new")
-
+            order = serializer.save()
+            order.status = "new"
+            order.save()
             #     Оповещение о созданном заказе
 
             return Response(
