@@ -27,7 +27,6 @@ class NewUserRegistrationSerializer(serializers.ModelSerializer):
             "company",
             "position",
             "password",
-
         )
         read_only_fields = ("id",)
 
@@ -202,6 +201,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "items",
         )
         read_only_fields = ("id",)
+
     def validate(self, data):
         items = data["items"]
         for item in items:
@@ -209,13 +209,18 @@ class OrderSerializer(serializers.ModelSerializer):
             quantity = item.get("quantity")
             product = ProductInfo.objects.filter(id=product_info.id).first()
             if not product:
-                raise serializers.ValidationError({"status": "failure", "message": "Такого продукта нет"})
+                raise serializers.ValidationError(
+                    {"status": "failure", "message": "Такого продукта нет"}
+                )
             if quantity <= 0:
-                raise serializers.ValidationError({"status": "failure", "message": "Продукта нет в наличии"})
+                raise serializers.ValidationError(
+                    {"status": "failure", "message": "Продукта нет в наличии"}
+                )
             if quantity > product.quantity:
-                raise serializers.ValidationError({"status": "failure", "message": "Нет такого количества"})
-            return data
-
+                raise serializers.ValidationError(
+                    {"status": "failure", "message": "Нет такого количества"}
+                )
+        return data
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -225,7 +230,8 @@ class OrderSerializer(serializers.ModelSerializer):
             product_id = item.get("product_info").id
             quantity = item.get("quantity") or 1
             OrderItem.objects.create(
-                order=order, product_info_id=product_id, quantity=quantity)
+                order=order, product_info_id=product_id, quantity=quantity
+            )
         return order
 
     def update(self, instance, validated_data):
@@ -235,7 +241,8 @@ class OrderSerializer(serializers.ModelSerializer):
             product_id = item.get("product_info").id
             quantity = item.get("quantity") or 1
             OrderItem.objects.create(
-                order=instance, product_info_id=product_id, quantity=quantity)
+                order=instance, product_info_id=product_id, quantity=quantity
+            )
         return instance
 
 
@@ -257,19 +264,33 @@ class OrderConfirmSerializer(serializers.Serializer):
         contact = Contact.objects.filter(Q(user_id=user.id) & Q(id=contact_id)).first()
         order = Order.objects.filter(Q(id=order_id) & Q(user_id=user.id)).first()
         status = order.status
-        order.contact = contact
         if not order:
-            raise serializers.ValidationError({"status": "failure", "message": "Такого заказа не существует"})
+            raise serializers.ValidationError(
+                {"status": "failure", "message": "Такого заказа не существует"}
+            )
         if not status == "basket":
-            raise serializers.ValidationError({"status": "failure", "message": "Неверный статус заказа"})
+            raise serializers.ValidationError(
+                {"status": "failure", "message": "Неверный статус заказа"}
+            )
         if not order.contact:
-            raise serializers.ValidationError({"status": "failure", "message": "Не указан контакт"})
+            raise serializers.ValidationError(
+                {"status": "failure", "message": "Не указан контакт"}
+            )
         if not contact.city:
-            raise serializers.ValidationError({"status": "failure", "message": "Не указан город"})
+            raise serializers.ValidationError(
+                {"status": "failure", "message": "Не указан город"}
+            )
         if not contact.street:
-            raise serializers.ValidationError({"status": "failure", "message": "Не указана улица"})
+            raise serializers.ValidationError(
+                {"status": "failure", "message": "Не указана улица"}
+            )
         if not contact.house:
-            raise serializers.ValidationError({"status": "failure", "message": "Не указано строение"})
+            raise serializers.ValidationError(
+                {"status": "failure", "message": "Не указано строение"}
+            )
         if not contact.phone:
-            raise serializers.ValidationError({"status": "failure", "message": "Не указан номер телефона"})
+            raise serializers.ValidationError(
+                {"status": "failure", "message": "Не указан номер телефона"}
+            )
+        order.contact = contact
         return order
