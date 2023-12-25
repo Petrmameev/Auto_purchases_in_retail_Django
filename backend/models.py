@@ -175,7 +175,7 @@ class ProductInfo(models.Model):
         verbose_name_plural = "Информация о продуктах"
         constraints = [
             models.UniqueConstraint(
-                fields=["product", "shop", "external_id"], name="unique_product_info"
+                fields=["product", "shop"], name="unique_product_info"
             ),
         ]
 
