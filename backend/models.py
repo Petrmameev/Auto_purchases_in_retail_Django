@@ -180,7 +180,7 @@ class ProductInfo(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.model} ({self.product} {self.quantity} {self.price} {self.price_rrc})"
+        return f"{self.id} {self.product} Количество: {self.quantity} Цена:{self.price} Рекомендованная цена: {self.price_rrc}"
 
 
 class Parameter(models.Model):
@@ -188,7 +188,7 @@ class Parameter(models.Model):
 
     class Meta:
         verbose_name = "Параметр"
-        verbose_name_plural = "Список параметров"
+        verbose_name_plural = "Существующие характеристики товара"
         ordering = ("name_parameter",)
 
     def __str__(self):
@@ -276,7 +276,7 @@ class Order(models.Model):
         ordering = ("-date_time",)
 
     def __str__(self):
-        return f"{self.date_time} {self.status}"
+        return f"{self.id} {self.date_time} {self.status}"
 
 
 class OrderItem(models.Model):

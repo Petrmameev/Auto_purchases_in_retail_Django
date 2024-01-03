@@ -12,7 +12,8 @@ from django.shortcuts import get_object_or_404
 from requests import get
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateAPIView, GenericAPIView
+from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -43,6 +44,7 @@ from backend.serializers import (
     OrderItemSerializer,
     OrderSerializer,
     PartnerStatusSerializer,
+    PartnerUpdateSerializer,
     ProductInfoSerializer,
     ShopSerializer,
 )
@@ -158,16 +160,6 @@ class ProductInfoView(APIView):
 
         return Response(serializer.data)
 
-    def post(self, request, *args, **kwargs):
-        serializer = ProductInfoSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
-            serializer.save()
-            return Response(
-                {"status": "success", "message": "Информация о товаре сформирована"},
-                status=status.HTTP_201_CREATED,
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class BasketView(APIView):
     """
@@ -175,7 +167,6 @@ class BasketView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
-    # queryset = Order.objects.filter(status=True)
     serializer_class = OrderSerializer
 
     # получить корзину
@@ -239,9 +230,9 @@ class BasketView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class PartnerUpdateView(APIView):
+class PartnerUpdateFileView(APIView):
     """
-    Класс для обновления прайса от поставщика
+    Класс для обновления прайса от поставщика из файла
     """
 
     permission_classes = [IsAuthenticated, IsShop]
@@ -260,10 +251,10 @@ class PartnerUpdateView(APIView):
                         {"Status": "Failure", "Message": "Ошибка загрузки файла"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            shop, _ = Shop.objects.get_or_create(
-                name=data["shop"]
-                # , user_id=request.user.id
-            )
+            shop, created = Shop.objects.get_or_create(user_id=request.user.id)
+            if created or shop.name != data["shop"]:
+                shop.name = data["shop"]
+                shop.save()
 
             for category in data["categories"]:
                 category_object, _ = Category.objects.get_or_create(
@@ -304,15 +295,67 @@ class PartnerUpdateView(APIView):
         )
 
 
-class PartnerStatusView(RetrieveUpdateAPIView):
+class PartnerUpdateUrlView(APIView):
     """
-    Класс для работы со статусом поставщика
+    Класс для обновления прайса от поставщика по ссылке
     """
 
-    queryset = Shop.objects.all()
-    serializer_class = PartnerStatusSerializer
-    permission_classes = [IsAuthenticated, Owner]
-    lookup_field = "id"
+    permission_classes = [IsAuthenticated, IsShop]
+    serializer_class = PartnerUpdateSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = PartnerUpdateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            url = serializer.validated_data.get("url")
+            try:
+                stream = get("url").content
+                data = load_yaml(stream, Loader=Loader)
+            except yaml.YAMLError as yamlerror:
+                print(yamlerror)
+                return Response(
+                    {"Status": "Failure", "Message": "Ошибка загрузки"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        shop, _ = Shop.objects.get_or_create(name=data["shop"])
+
+        for category in data["categories"]:
+            category_object, _ = Category.objects.get_or_create(
+                id=category["id"], name=category["name"]
+            )
+            category_object.shops.add(shop.id)
+            category_object.save()
+
+        ProductInfo.objects.filter(shop_id=shop.id).delete()
+
+        for item in data["goods"]:
+            product, _ = Product.objects.get_or_create(
+                name=item["name"], category_id=item["category"]
+            )
+
+            product_info = ProductInfo.objects.create(
+                product_id=product.id,
+                external_id=item["id"],
+                model=item["model"],
+                price=item["price"],
+                price_rrc=item["price_rrc"],
+                quantity=item["quantity"],
+                shop_id=shop.id,
+            )
+            for name, value in item["parameters"].items():
+                parameter_object, _ = Parameter.objects.get_or_create(
+                    name_parameter=name
+                )
+                ProductParameter.objects.create(
+                    product_info_id=product_info.id,
+                    parameter_id=parameter_object.id,
+                    value=value,
+                )
+
+        return Response(
+            {"Status": "Success", "Message": "Прайс обновлен"},
+            status=status.HTTP_200_OK,
+        )
 
 
 class PartnerOrdersView(APIView):
@@ -323,11 +366,10 @@ class PartnerOrdersView(APIView):
     permission_classes = [IsAuthenticated, IsShop]
     serializer_class = OrderSerializer
 
-    #
     def get(self, request, *args, **kwargs):
         order = (
             Order.objects.filter(
-                ordered_items__product_info__shop__user_id=request.user.id
+                # ordered_items__product_info__shop__user_id=request.user.id
             )
             .exclude(status="basket")
             .prefetch_related(
@@ -354,6 +396,12 @@ class ContactView(APIView):
     """
 
     permission_classes = [IsAuthenticated, Owner]
+    serializer_class = ContactSerializer
+
+    def get(self, request, *args, **kwargs):
+        contact = Contact.objects.filter(user=request.user)
+        serializer = ContactSerializer(contact, many=True)
+        return Response(serializer.data)
 
     def post(self, request, *args, **kwargs):
         request.data["user"] = request.user.id
@@ -437,7 +485,7 @@ class OrderConfirmView(APIView):
             )
             response = OrderSerializer(basket)
             user = request.user
-            order = serializer.save()
+            order = serializer.validated_data
             order.status = "new"
             order.save()
             #     Оповещение о созданном заказе
