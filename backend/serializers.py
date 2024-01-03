@@ -12,6 +12,7 @@ from backend.models import (
     ProductInfo,
     ProductParameter,
     Shop,
+    STATUS_CHOICES,
     User,
 )
 
@@ -51,24 +52,6 @@ class LoginAccountSerializer(serializers.Serializer):
                 {"status": "Failure", "message": "Неверное имя пользователя или пароль"}
             )
         return user
-
-
-class PartnerStatusSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(max_length=30, required=False)
-    status = serializers.BooleanField(default=True)
-    url = serializers.URLField(required=False)
-    file_name = serializers.CharField(max_length=50, required=False)
-
-    class Meta:
-        model = Shop
-        fields = (
-            "id",
-            "name",
-            "status",
-            "url",
-            "file_name",
-        )
-        read_only_fields = ("id",)
 
 
 class ContactSerializer(serializers.ModelSerializer):
@@ -187,7 +170,7 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(write_only=True, many=True)
     total_sum = serializers.IntegerField(read_only=True)
     contact = ContactSerializer(read_only=True)
-    status = serializers.CharField(required=False)
+    status = serializers.ChoiceField(choices=STATUS_CHOICES, required=False)
 
     class Meta:
         model = Order
@@ -248,19 +231,19 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class OrderConfirmSerializer(serializers.Serializer):
     id = serializers.IntegerField(write_only=True)
-    contact = serializers.IntegerField(write_only=True)
+    contact_id = serializers.IntegerField(write_only=True)
 
     class Meta:
         model = Order
         fields = (
             "id",
-            "contact",
+            "contact_id",
         )
 
     def validate(self, data):
         user = self.context["request"].user
         order_id = data.get("id")
-        contact_id = data.get("contact")
+        contact_id = data.get("contact_id")
         contact = Contact.objects.filter(Q(user_id=user.id) & Q(id=contact_id)).first()
         order = Order.objects.filter(Q(id=order_id) & Q(user_id=user.id)).first()
         status = order.status
@@ -271,10 +254,6 @@ class OrderConfirmSerializer(serializers.Serializer):
         if not status == "basket":
             raise serializers.ValidationError(
                 {"status": "failure", "message": "Неверный статус заказа"}
-            )
-        if not order.contact:
-            raise serializers.ValidationError(
-                {"status": "failure", "message": "Не указан контакт"}
             )
         if not contact.city:
             raise serializers.ValidationError(
@@ -294,3 +273,7 @@ class OrderConfirmSerializer(serializers.Serializer):
             )
         order.contact = contact
         return order
+
+
+class PartnerUpdateSerializer(serializers.Serializer):
+    url = serializers.URLField(write_only=True, required=True)
