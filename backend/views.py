@@ -43,13 +43,14 @@ from backend.serializers import (
     OrderConfirmSerializer,
     OrderItemSerializer,
     OrderSerializer,
-    PartnerStatusSerializer,
     PartnerUpdateSerializer,
     ProductInfoSerializer,
     ShopSerializer,
 )
 from backend.signals import (
     new_order,
+    new_order_signal_user,
+    new_order_signal_admin,
     new_user_registered,
     new_user_registered_signal_mail,
 )
@@ -67,7 +68,7 @@ class NewUserRegistrationView(APIView):
         serializer = NewUserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            # new_user_registered_signal_mail(user)
+            new_user_registered_signal_mail(user)
             response = {
                 "status": "Success",
                 "message": "Учетная запись создана, на почту отправлено оповещение о регистрации",
@@ -307,17 +308,20 @@ class PartnerUpdateUrlView(APIView):
         serializer = PartnerUpdateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            url = serializer.validated_data.get("url")
-            try:
-                stream = get("url").content
-                data = load_yaml(stream, Loader=Loader)
-            except yaml.YAMLError as yamlerror:
-                print(yamlerror)
-                return Response(
-                    {"Status": "Failure", "Message": "Ошибка загрузки"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        shop, _ = Shop.objects.get_or_create(name=data["shop"])
+        url = serializer.validated_data.get("url")
+        try:
+            stream = get("url").content
+            data = load_yaml(stream, Loader=Loader)
+        except yaml.YAMLError as yamlerror:
+            print(yamlerror)
+            return Response(
+                {"Status": "Failure", "Message": "Ошибка загрузки"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        shop, created = Shop.objects.get_or_create(user_id=request.user.id)
+        if created or shop.name != data["shop"]:
+            shop.name = data["shop"]
+            shop.save()
 
         for category in data["categories"]:
             category_object, _ = Category.objects.get_or_create(
@@ -360,7 +364,7 @@ class PartnerUpdateUrlView(APIView):
 
 class PartnerOrdersView(APIView):
     """
-    Класс для получения заказов поставщиками
+    Класс для получения заказов поставщиками и изменения статуса заказа
     """
 
     permission_classes = [IsAuthenticated, IsShop]
@@ -387,6 +391,22 @@ class PartnerOrdersView(APIView):
         )
 
         serializer = OrderSerializer(order, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, *args, **kwargs):
+        order_id = request.data.get("order_id")
+        new_status = request.data.get("status")
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            return Response(
+                {"status": "failure", "message": "Заказ не наиден"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        order.status = new_status
+        order.save()
+        serializer = OrderSerializer(order)
         return Response(serializer.data)
 
 
@@ -488,7 +508,8 @@ class OrderConfirmView(APIView):
             order = serializer.validated_data
             order.status = "new"
             order.save()
-            #     Оповещение о созданном заказе
+            new_order_signal_user(user)
+            new_order_signal_admin(user)
 
             return Response(
                 {"Status": "Success", "Message": "Заказ создан"},

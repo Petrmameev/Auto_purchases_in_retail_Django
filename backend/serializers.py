@@ -226,6 +226,8 @@ class OrderSerializer(serializers.ModelSerializer):
             OrderItem.objects.create(
                 order=instance, product_info_id=product_id, quantity=quantity
             )
+        instance.status = validated_data.get("status", instance.status)
+        instance.save()
         return instance
 
 

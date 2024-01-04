@@ -40,16 +40,14 @@ def new_user_registered_signal_mail(user):
     """
     отправляем письмо с подтрердждением почты
     """
-    # send an e-mail to the user
     # token, _ = ConfirmEmailToken.objects.get_or_create(user=user)
 
     send_mail(
-        # title:
         # f"Password Reset Token for {user.email}",
-        f"You have been registered",
+        f"Регистрация в Нашем магазине",
         # message:
         # token.key,
-        f"You have been registered",
+        f"Вы были зарегестрированы",
         # from:
         settings.EMAIL_HOST_USER,
         # to:
@@ -58,22 +56,33 @@ def new_user_registered_signal_mail(user):
     )
 
 
-@receiver(new_order)
-def new_order_signal(user_id, **kwargs):
+def new_order_signal_user(user):
     """
-    отправяем письмо при изменении статуса заказа
+    отправяем письмо с подтверждением заказа
     """
-    # send an e-mail to the user
-    user = User.objects.get(id=user_id)
-
-    msg = EmailMultiAlternatives(
-        # title:
-        f"Обновление статуса заказа",
+    send_mail(
+        f"Благодарим за заказ",
         # message:
-        "Заказ сформирован",
+        f"Ваш заказ сформирован",
         # from:
         settings.EMAIL_HOST_USER,
         # to:
         [user.email],
+        fail_silently=False,
     )
-    msg.send()
+
+
+def new_order_signal_admin(user):
+    """
+    отправяем письмо админу о заказе
+    """
+    send_mail(
+        f"У Вас новый заказ",
+        # message:
+        f"Все подробности в админ-панели",
+        # from:
+        settings.EMAIL_HOST_USER,
+        # to:
+        [settings.EMAIL_HOST_USER],
+        fail_silently=False,
+    )
