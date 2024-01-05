@@ -1,65 +1,39 @@
-Пример API Сервиса для магазина
+# Дипломная работа к профессии Python-разработчик «API Сервис заказа товаров для розничных сетей».
 
-[Документация по запросам в PostMan](https://documenter.getpostman.com/view/5037826/SVfJUrSc) 
+## Описание
 
-## **установка СУБД**
+Приложение предназначено для автоматизации закупок в розничной сети через REST API. Сервис подразумевает множество покупателей и продавцов(магазинов).
 
-    sudo nano  /etc/apt/sources.list.d/pgdg.list
-    
-    ----->
-    deb http://apt.postgresql.org/pub/repos/apt/ bionic-pgdg main
-    <<----
-    
-    
-    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-    
-    sudo apt-get update
-    
-    sudo apt-get install postgresql-11 postgresql-server-dev-11
-    
-    sudo -u postgres psql postgres
-    
-    create user diplom_user with password 'password';
-    
-    alter role diplom_user set client_encoding to 'utf8';
-    
-    alter role diplom_user set default_transaction_isolation to 'read committed';
-    
-    alter role diplom_user set timezone to 'Europe/Moscow';
-    
-    create database diplom_db owner mploy;
-    alter user mploy createdb;
+**Настройки проекта:**
 
+     - settings.py
+     - .env (содержит переменные из settings.py и )
+     - Dockerfile
+     - docker-compose.yml
+     - /nginx/orders.conf
 
+**Команды для запуска сервера**
 
-## **Получить исходный код**
+     1) cd Diplom_developer_Python 
+     2) sudo docker-compose up -d --build
 
-    git config --global user.name "YOUR_USERNAME"
-    
-    git config --global user.email "your_email_address@example.com"
-    
-    mkdir ~/my_diplom
-    
-    cd my_diplom
-    
-    git clone git@github.com:A-Iskakov/netology_pd_diplom.git
-    
-    cd netology_pd_diplom
-    
-    sudo pip3 install  --upgrade pip
-    
-    sudo pip3 install -r requirements.txt
-    
-    python3 manage.py makemigrations
-     
-    python3 manage.py migrate
-    
-    python3 manage.py createsuperuser    
-    
- 
-**Проверяем работу модулей**
-    
-    
-    python3 manage.py runserver 0.0.0.0:8000
-    
-   
+**Команда для очистки БД**
+
+     - sudo docker-compose exec backend python3 manage.py flush --no-input
+
+**Команда для остановки сервера**
+
+     - sudo docker-compose down
+
+## Доступные функции в приложении:
+
+ - создание пользователя (на почту, указанную при регистрации отправляется уведомление)
+ - авторизация (принимает логин и пароль, возвращает токен для авторизации)
+ - создание и редактирование контакта (требуется авторизация пользователя)
+ - изменения типа пользователя на тип "Магазин"
+ - загрузка прайса (через ссылку или из файла, требуется авторизация пользователя - только для пользователя - магазина)
+ - просмотр товаров, магазинов, категорий (не требуется авторизации пользователя)
+ - формирование и редактирование корзины (требуется авторизация пользователя)
+ - подтверждение заказа с указанием адреса (требуется авторизация пользователя, на почту приходит уведомление о заказе для покупателя и для админа)
+ - просмотр заказов покупателем (требуется авторизация пользователя)
+ - просмотр заказов продавцом (требует авторизации магазина)
