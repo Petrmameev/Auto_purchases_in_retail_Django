@@ -118,7 +118,7 @@ class Shop(models.Model):
 class Category(models.Model):
     name = models.CharField(max_length=50, verbose_name="Название категории")
     shops = models.ManyToManyField(
-        Shop, verbose_name="Магазины", related_name="Категории", blank=True
+        Shop, verbose_name="Магазины", related_name="categories", blank=True
     )
 
     class Meta:
@@ -135,7 +135,7 @@ class Product(models.Model):
     category = models.ForeignKey(
         Category,
         verbose_name="Категория",
-        related_name="Товары",
+        related_name="products",
         blank=True,
         on_delete=models.CASCADE,
     )
@@ -229,7 +229,7 @@ class Contact(models.Model):
     user = models.ForeignKey(
         User,
         verbose_name="Контакты",
-        related_name="Пользователь",
+        related_name="contacts",
         blank=True,
         on_delete=models.CASCADE,
     )
@@ -253,7 +253,7 @@ class Order(models.Model):
     user = models.ForeignKey(
         User,
         verbose_name="Пользователь",
-        related_name="Заказ",
+        related_name="orders",
         on_delete=models.CASCADE,
     )
 
@@ -264,7 +264,6 @@ class Order(models.Model):
     contact = models.ForeignKey(
         Contact,
         verbose_name="Контакт",
-        related_name="Заказ",
         blank=True,
         null=True,
         on_delete=models.CASCADE,
