@@ -21,6 +21,10 @@
 
      - sudo docker-compose exec backend python3 manage.py flush --no-input
 
+**Команда для запуска Celery**
+
+     - celery -A netology_pd_diplom worker
+
 **Команда для остановки сервера**
 
      - sudo docker-compose down
