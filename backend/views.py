@@ -1,4 +1,5 @@
 from distutils.util import strtobool
+import celery
 import os
 import yaml
 from django.contrib.auth import authenticate
@@ -237,7 +238,11 @@ class PartnerUpdateFileView(APIView):
     """
 
     permission_classes = [IsAuthenticated, IsShop]
+    app = celery.Celery(
+        broker="redis://127.0.0.1:6379/1", backend="redis://127.0.0.1:6379/2"
+    )
 
+    @app.task
     def post(self, request, *args, **kwargs):
         data_1 = "./data/shop1.yaml"
         data_2 = "./data/shop2.yaml"
@@ -252,48 +257,50 @@ class PartnerUpdateFileView(APIView):
                         {"Status": "Failure", "Message": "Ошибка загрузки файла"},
                         status=status.HTTP_400_BAD_REQUEST,
                     )
-            shop, created = Shop.objects.get_or_create(user_id=request.user.id)
-            if created or shop.name != data["shop"]:
-                shop.name = data["shop"]
-                shop.save()
+                process_post_request.delay(data)
+            return Response(
+                {"Status": "Success", "Message": "Прайс обновлен"},
+                status=status.HTTP_200_OK,
+            )
 
-            for category in data["categories"]:
-                category_object, _ = Category.objects.get_or_create(
-                    id=category["id"], name=category["name"]
+    def process_post_request():
+        shop, created = Shop.objects.get_or_create(user_id=request.user.id)
+        if created or shop.name != data["shop"]:
+            shop.name = data["shop"]
+            shop.save()
+
+        for category in data["categories"]:
+            category_object, _ = Category.objects.get_or_create(
+                id=category["id"], name=category["name"]
+            )
+            category_object.shops.add(shop.id)
+            category_object.save()
+
+        ProductInfo.objects.filter(shop_id=shop.id).delete()
+
+        for item in data["goods"]:
+            product, _ = Product.objects.get_or_create(
+                name=item["name"], category_id=item["category"]
+            )
+
+            product_info = ProductInfo.objects.create(
+                product_id=product.id,
+                external_id=item["id"],
+                model=item["model"],
+                price=item["price"],
+                price_rrc=item["price_rrc"],
+                quantity=item["quantity"],
+                shop_id=shop.id,
+            )
+            for name, value in item["parameters"].items():
+                parameter_object, _ = Parameter.objects.get_or_create(
+                    name_parameter=name
                 )
-                category_object.shops.add(shop.id)
-                category_object.save()
-
-            ProductInfo.objects.filter(shop_id=shop.id).delete()
-
-            for item in data["goods"]:
-                product, _ = Product.objects.get_or_create(
-                    name=item["name"], category_id=item["category"]
+                ProductParameter.objects.create(
+                    product_info_id=product_info.id,
+                    parameter_id=parameter_object.id,
+                    value=value,
                 )
-
-                product_info = ProductInfo.objects.create(
-                    product_id=product.id,
-                    external_id=item["id"],
-                    model=item["model"],
-                    price=item["price"],
-                    price_rrc=item["price_rrc"],
-                    quantity=item["quantity"],
-                    shop_id=shop.id,
-                )
-                for name, value in item["parameters"].items():
-                    parameter_object, _ = Parameter.objects.get_or_create(
-                        name_parameter=name
-                    )
-                    ProductParameter.objects.create(
-                        product_info_id=product_info.id,
-                        parameter_id=parameter_object.id,
-                        value=value,
-                    )
-
-        return Response(
-            {"Status": "Success", "Message": "Прайс обновлен"},
-            status=status.HTTP_200_OK,
-        )
 
 
 class PartnerUpdateUrlView(APIView):
@@ -509,7 +516,7 @@ class OrderConfirmView(APIView):
             order.status = "new"
             order.save()
             new_order_signal_user(user)
-            new_order_signal_admin(user)
+            new_order_signal_admin()
 
             return Response(
                 {"Status": "Success", "Message": "Заказ создан"},

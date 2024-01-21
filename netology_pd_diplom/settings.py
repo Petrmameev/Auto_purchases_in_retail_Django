@@ -44,11 +44,11 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # "backend.apps.BackendConfig",
     "rest_framework",
     "rest_framework.authtoken",
     "django_rest_passwordreset",
     "backend",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -162,3 +162,9 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.TokenAuthentication",
     ),
 }
+
+# CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+# CELERY_BROKER_TRANSPORT = 'redis'
+# CELERY_RESULT_BACKEND = 'django-db'
+CELERY_BROKER_URL = "redis://127.0.0.1:6379"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"
