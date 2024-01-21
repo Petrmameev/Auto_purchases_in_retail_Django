@@ -1,6 +1,6 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
-from models import User
+from backend.models import User
 import django
 from django.conf import settings
 

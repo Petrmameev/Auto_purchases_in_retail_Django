@@ -1,8 +1,6 @@
-# from django.conf import settings
-# from django.core.mail import EmailMultiAlternatives, send_mail
+
 from django.dispatch import Signal
 
-# from django_rest_passwordreset.signals import reset_password_token_created
 from backend.tasks import (
     new_user_registered_signal_mail_task,
     new_order_signal_user_task,
@@ -10,6 +8,8 @@ from backend.tasks import (
 )
 from backend.models import User
 from django.conf import settings
+
+
 
 new_user_registered = Signal()
 

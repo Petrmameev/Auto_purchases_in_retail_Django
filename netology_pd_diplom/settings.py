@@ -26,13 +26,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG")
-# DEBUG = True
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS").split(",")
 # ALLOWED_HOSTS = ["*"]
 
 # Application definition
 
-# CSRF_TRUSTED_ORIGINS = ["https://*.https://localhost/admin/login/", "https://*.127.0.0.1"]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost",
 ]
@@ -138,7 +136,7 @@ STATIC_URL = "/static/"
 AUTH_USER_MODEL = "backend.User"
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-# EMAIL_USE_TLS = True
+
 
 EMAIL_HOST = os.getenv("EMAIL_HOST")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
@@ -157,14 +155,10 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
     ),
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        # 'rest_framework.authentication.SessionAuthentication',
-        # 'rest_framework.authentication.BasicAuthentication',
         "rest_framework.authentication.TokenAuthentication",
     ),
 }
 
-# CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-# CELERY_BROKER_TRANSPORT = 'redis'
-# CELERY_RESULT_BACKEND = 'django-db'
 CELERY_BROKER_URL = "redis://127.0.0.1:6379"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"
+
