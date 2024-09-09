@@ -42,5 +42,5 @@
  - просмотр заказов покупателем (требуется авторизация пользователя)
  - просмотр заказов продавцом (требует авторизации магазина)
 
-   ![Screenshot_1](https://github.com/Petrmameev/Diplom_developer_Python/assets/103646573/17e7c53a-364c-4be3-9164-5bcd4b6873d5)
+   ![Screenshot_1](https://github.com/user-attachments/assets/40c98777-6c0d-4d65-9942-8c6f1a42ee6f)
 
